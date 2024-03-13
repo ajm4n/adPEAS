@@ -52,8 +52,10 @@ def extract_kerberoastable_accounts(tgt):
     try:
         kerberoastable_accounts = []
 
-        for ticket in tgt['enc-part']['cipher'].tickets:
-            sname = str(ticket['sname'])
+        # Assuming tgt is a tuple containing the ticket
+        for ticket in tgt:
+            # Assuming ticket is a dictionary
+            sname = str(ticket.get('sname'))
             if sname.startswith('service'):
                 service_name = sname.split('/')[1].split('@')[0]
                 kerberoastable_accounts.append(service_name)
