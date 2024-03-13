@@ -10,14 +10,16 @@ from impacket.krb5.types import Principal, KerberosTime
 
 def kerberos_auth(username, password, domain, dc_ip):
     try:
-        # Create a Principal object for the user
-        user_principal = Principal(name=f"{username}@{domain}", type=constants.PrincipalNameType.NT_PRINCIPAL)
+        # Create a Principal object for the user's principal
+        user_principal = Principal(name=username, type=constants.PrincipalNameType.NT_PRINCIPAL)
 
         # Initialize the client CCache
         ccache = CCache()
 
         # Get TGT from KDC
-        ccache.init_cred(user_principal, password)
+        ccache.init_user(user_principal, password, domain)
+
+        # Retrieve TGT for the user's realm
         krbtgt = ccache.get_tgt(user_principal.realm)
 
         return ccache, krbtgt
