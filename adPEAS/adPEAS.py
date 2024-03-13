@@ -10,7 +10,7 @@ def kerberos_auth(username, password, domain, dc_ip):
         smb.login(username, password, domain)
 
         # Perform Kerberos authentication
-        _, krbtgt_ticket = smb.kerberosLogin(username, password, domain, '', lmhash=compute_lmhash(password), nthash=compute_nthash(password))
+        _, krbtgt_ticket = smb.kerberosLogin(username, password, domain)
         smb.logoff()
 
         return krbtgt_ticket
