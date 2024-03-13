@@ -83,29 +83,24 @@ def find_esc1_certificate_templates(username, password, domain):
         
 def get_domain_controllers(domain, username, password):
     try:
-        server = ldap3.Server(domain, get_info=ldap3.ALL)
-        conn = ldap3.Connection(server, user=username, password=password)
-        if not conn.bind():
-            print("Failed to authenticate with provided credentials.")
-            return []
-
-        conn.search(search_base='CN=Computers,DC=' + ','.join(f"DC={dc}" for dc in domain.split('.')),
-                    search_filter='(objectClass=computer)',
-                    search_scope=ldap3.SUBTREE,
-                    attributes=['dNSHostName', 'msDS-SupportedEncryptionTypes'])
-
+        # Discover LDAP servers using SRV records
+        srv_records = dns.resolver.resolve(f'_ldap._tcp.dc._msdcs.{domain}', 'SRV')
         domain_controllers = []
-        for entry in conn.entries:
-            dc_info = {
-                'hostname': entry.dNSHostName.value,
-                'encryption_types': entry['msDS-SupportedEncryptionTypes'].values if 'msDS-SupportedEncryptionTypes' in entry else []
+
+        # Extract domain controllers' hostnames and ports from SRV records
+        for record in srv_records:
+            domain_controller = {
+                'hostname': str(record.target).rstrip('.'),
+                'port': record.port,
+                'weight': record.weight,
+                'priority': record.priority
             }
-            domain_controllers.append(dc_info)
+            domain_controllers.append(domain_controller)
 
         return domain_controllers
 
     except Exception as e:
-        print(f"Error while getting Domain Controllers: {e}")
+        print(f"Error while discovering domain controllers: {e}")
         return []
     
 def discover_domain_controllers(domain):
