@@ -1,4 +1,4 @@
-
+import dns.resolver
 import ldap3
 from impacket.krb5.ccache import CCache
 from impacket.krb5.kerberosv5 import getKerberosTGS
