@@ -263,7 +263,7 @@ def main():
     find_esc1_certificate_templates(username, password, domain)    
 
     # Check for machines with WebDAV enabled
-    check_webdav_enabled(domain)
+    # check_webdav_enabled(domain)
 
     # Check for computers with SMB Signing not required using LDAP
     check_smb_signing_not_required_ldap(domain, username, password)
