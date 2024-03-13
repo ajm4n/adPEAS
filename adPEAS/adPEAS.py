@@ -1,4 +1,3 @@
-
 import ldap3
 from impacket.krb5.ccache import CCache
 from impacket.krb5.kerberosv5 import getKerberosTGS
@@ -52,27 +51,64 @@ def check_for_persistence(username, password, domain):
         print(f"Error while checking for persistence: {e}")
 
 def check_ad_cs_certificate_templates(username, password, domain):
-    try:
-        server = ldap3.Server(domain, get_info=ldap3.ALL)
-        conn = ldap3.Connection(server, user=username, password=password)
-        if not conn.bind():
-            print("Failed to authenticate with provided credentials.")
-            return
+    # Connect to Active Directory
+    server = Server(domain, get_info=ALL_ATTRIBUTES)
+    conn = Connection(server, user=username, password=password)
+    if not conn.bind():
+        print("Failed to authenticate with provided credentials.")
+        return
+    
+    # Search for Certificate Templates meeting specified criteria
+    conn.search(search_base='CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' + ','.join(f"DC={dc}" for dc in domain.split('.')),
+                search_filter='(&(objectClass=pKICertificateTemplate)(!(pKIEnrollmentFlag:1.2.840.113556.1.4.803:=1))(pKIEnrollmentFlag:1.2.840.113556.1.4.803:=128))',
+                search_scope=SUBTREE,
+                attributes=['displayName'])
+    
+    if conn.entries:
+        print("AD CS Certificate Templates meeting the specified criteria (ESC1):")
+        for entry in conn.entries:
+            print(entry.displayName.value)
+    else:
+        print("No AD CS Certificate Templates meeting the specified criteria found (ESC1).")
 
-        conn.search(search_base='CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' + ','.join(f"DC={dc}" for dc in domain.split('.')),
-                    search_filter='(objectClass=pKICertificateTemplate)',
-                    search_scope=ldap3.SUBTREE,
-                    attributes=['displayName'])
+        
+def check_ad_cs_certificate_templates_acl(username, password, domain):
+    server = ldap3.Server(domain, get_info=ldap3.ALL)
+    conn = ldap3.Connection(server, user=username, password=password)
+    if not conn.bind():
+        print("Failed to authenticate with provided credentials.")
+        return
 
-        if conn.entries:
-            print("AD CS Certificate Templates:")
-            for entry in conn.entries:
-                print(entry.displayName.value)
-        else:
-            print("No AD CS certificate templates found.")
+    # Search for certificate templates
+    conn.search(search_base='CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' + ','.join(f"DC={dc}" for dc in domain.split('.')),
+                search_filter='(objectClass=pKICertificateTemplate)',
+                search_scope=ldap3.SUBTREE,
+                attributes=['cn'])
 
-    except Exception as e:
-        print(f"Error while checking AD CS certificate templates: {e}")
+    templates_with_write_access = []
+    for entry in conn.entries:
+        template_name = entry.cn.value
+        # Check if the user has permissions to modify this template
+        if user_has_write_access(conn, template_name, username):
+            templates_with_write_access.append(template_name)
+
+    if templates_with_write_access:
+        print(f"AD CS Certificate Templates where user '{username}' has write access (ESC4):")
+        for template in templates_with_write_access:
+            print(template)
+    else:
+        print(f"No AD CS Certificate Templates found where user '{username}' has write access (ESC4).")
+
+def user_has_write_access(conn, template_name, username):
+    # Query Active Directory to determine if the user has write access to the template
+    # You may need to adjust this function based on your Active Directory structure and permissions
+    # This is a simplified example assuming the user has write access if they are a member of a specific group
+    conn.search(search_base='CN=' + template_name + ',CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' + ','.join(f"DC={dc}" for dc in domain.split('.')),
+                search_filter=f'(&(objectClass=pKICertificateTemplate)(member={username}))',
+                search_scope=ldap3.BASE,
+                attributes=['member'])
+
+    return len(conn.entries) > 0
 
 def check_webdav_enabled(domain):
     try:
@@ -246,6 +282,9 @@ def main():
 
     # Check for AD CS certificate templates where the user has write access
     check_ad_cs_certificate_templates(username, password, domain)
+
+    #esc4
+    check_ad_cs_certificate_templates_acl(username, password, domain)
 
     # Check for machines with WebDAV enabled
     check_webdav_enabled(domain)
