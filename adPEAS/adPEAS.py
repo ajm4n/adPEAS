@@ -64,7 +64,7 @@ def check_esc1_vulnerability(username, password, domain, dc_ip):
     try:
         # Connect to the Domain Controller LDAP
         server = Server(dc_ip, get_info=ALL_ATTRIBUTES)
-        conn = Connection(server, user=f"{username}@{domain}", password=password, authentication='NTLM', auto_bind=True)
+        conn = Connection(server, user=f"{domain}\\{username}", password=password, authentication='NTLM', auto_bind=True)
 
         # Search for vulnerable certificate templates
         conn.search(search_base='CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' + ','.join(f"DC={dc}" for dc in domain.split('.')),
