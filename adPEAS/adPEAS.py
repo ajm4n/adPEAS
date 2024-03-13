@@ -7,7 +7,7 @@ def get_ticket_for_user(username, password, domain, dc_ip):
         smb.login(username, password, domain)
 
         # Get the TGT for the specified user
-        krbtgt_ticket = smb.getKerberosTGTForCreds(username, password, domain)
+        _, krbtgt_ticket = smb.getKerberosTGT(username, password, domain)
         smb.logoff()
 
         return krbtgt_ticket
