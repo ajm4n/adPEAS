@@ -1,8 +1,4 @@
 from impacket.smbconnection import SMBConnection
-from impacket.krb5 import constants
-from impacket.krb5.asn1 import AP_REQ, TGS_REQ
-from impacket.krb5.types import Principal, KerberosTime, Ticket
-from impacket.ntlm import compute_lmhash, compute_nthash
 
 def get_ticket_for_user(username, password, domain, dc_ip):
     try:
@@ -11,7 +7,7 @@ def get_ticket_for_user(username, password, domain, dc_ip):
         smb.login(username, password, domain)
 
         # Get the TGT for the specified user
-        _, krbtgt_ticket = smb.getKerberosTGT(username, password, domain)
+        krbtgt_ticket = smb.getKerberosTGTForCreds(username, password, domain)
         smb.logoff()
 
         return krbtgt_ticket
