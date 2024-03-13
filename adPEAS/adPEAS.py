@@ -17,10 +17,10 @@ def kerberos_auth(username, password, domain, dc_ip):
         ccache = CCache()
 
         # Get TGT from KDC
-        ccache.init_user(user_principal, password, domain)
+        ccache.init_user(user_principal, password)
 
         # Retrieve TGT for the user's realm
-        krbtgt = ccache.get_tgt(user_principal.realm)
+        krbtgt = ccache.get_tgt()
 
         return ccache, krbtgt
 
