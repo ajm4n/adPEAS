@@ -12,7 +12,7 @@ def kerberos_auth(username, password, domain, dc_ip):
         ccache = CCache()
 
         # Create a principal for the user
-        user_principal = Principal(f"{username}@{domain}", type=Principal.NT_PRINCIPAL)
+        user_principal = Principal(f"{username}@{domain}", type="NT_PRINCIPAL")
 
         # Get a TGT for the user
         smb.kerberosLogin(user_principal, password, domain, ccache)
@@ -25,6 +25,7 @@ def kerberos_auth(username, password, domain, dc_ip):
     except Exception as e:
         print(f"Error during Kerberos authentication: {e}")
         return None, None
+
 def kerberoast(domain, username, password, dc_ip):
     try:
         print(f"Attempting to Kerberoast accounts from {dc_ip}")
