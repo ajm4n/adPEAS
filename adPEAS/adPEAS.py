@@ -10,7 +10,7 @@ def kerberos_auth(username, password, domain, dc_ip):
         smb.login(username, password, domain)
 
         # Create a principal for the user
-        user_principal = Principal(f"{username}@{domain}", type="NT_PRINCIPAL")
+        user_principal = Principal(f"{username}@{dc_ip}", type="NT_PRINCIPAL")
 
         # Get a TGT for the user
         smb.kerberosLogin(user_principal, password, domain)
