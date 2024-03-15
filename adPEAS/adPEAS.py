@@ -98,36 +98,72 @@ def request_service_ticket(krbctx, krbtgt, target_user):
         print(f"Error while requesting service ticket: {e}")
         return None
 
-def check_esc1_certificates(username, password, domain, dc_ip):
+def find_certificate_authorities(username, password, domain, dc_ip):
     try:
         # Connect to the Domain Controller via LDAP
         server = Server(dc_ip)
         conn = Connection(server, user=f"{domain}\\{username}", password=password)
         conn.bind()
 
-        # Search for ESC1 certificate templates
-        conn.search(search_base='CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' +
+        # Search for Certificate Authorities
+        conn.search(search_base='CN=Certification Authorities,CN=Public Key Services,CN=Services,CN=Configuration,' +
                                   ','.join(f"DC={dc}" for dc in domain.split('.')),
-                     search_filter='(objectClass=pKICertificateTemplate)',
+                     search_filter='(objectClass=pKICertificateAuthority)',
                      search_scope=SUBTREE,
-                     attributes=['displayName', 'msPKI-Certificate-Template-OID'])
+                     attributes=['dNSHostName'])
 
-        esc1_templates = []
+        cas = []
         for entry in conn.entries:
-            if entry['msPKI-Certificate-Template-OID'].startswith('1.3.6.1.4.1.311.21.8.106'):
-                esc1_templates.append(entry['displayName'].value)
-
-        if esc1_templates:
-            print("ESC1 Certificate Templates found:")
-            for template in esc1_templates:
-                print(template)
-        else:
-            print("No ESC1 Certificate Templates found.")
+            cas.append(entry['dNSHostName'].value)
 
         conn.unbind()
+        return cas
+
+    except Exception as e:
+        print(f"Error while finding Certificate Authorities: {e}")
+        return []
+
+def check_esc1_certificates(username, password, domain, dc_ip):
+    try:
+        # Find all Certificate Authorities
+        cas = find_certificate_authorities(username, password, domain, dc_ip)
+        if not cas:
+            print("No Certificate Authorities found.")
+            return
+
+        # Check ESC1 certificates for each Certificate Authority
+        for ca in cas:
+            print(f"Checking ESC1 certificates for Certificate Authority: {ca}")
+
+            # Connect to the Certificate Authority via LDAP
+            ca_server = Server(ca)
+            conn = Connection(ca_server, user=f"{domain}\\{username}", password=password)
+            conn.bind()
+
+            # Search for ESC1 certificate templates
+            conn.search(search_base='CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' +
+                                      ','.join(f"DC={dc}" for dc in domain.split('.')),
+                         search_filter='(objectClass=pKICertificateTemplate)',
+                         search_scope=SUBTREE,
+                         attributes=['displayName', 'msPKI-Certificate-Template-OID'])
+
+            esc1_templates = []
+            for entry in conn.entries:
+                if entry['msPKI-Certificate-Template-OID'].startswith('1.3.6.1.4.1.311.21.8.106'):
+                    esc1_templates.append(entry['displayName'].value)
+
+            if esc1_templates:
+                print("ESC1 Certificate Templates found:")
+                for template in esc1_templates:
+                    print(template)
+            else:
+                print("No ESC1 Certificate Templates found.")
+
+            conn.unbind()
 
     except Exception as e:
         print(f"Error while checking ESC1 certificates: {e}")
+
 
 
 # Example usage:
