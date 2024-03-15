@@ -3,6 +3,7 @@ from impacket.krb5.asn1 import AP_REQ
 from impacket.krb5.ccache import CCache
 from impacket.krb5.types import Principal
 from impacket.smbconnection import SMBConnection
+from impacket import kerberos
 
 def kerberos_auth(username, password, domain, dc_ip):
     try:
