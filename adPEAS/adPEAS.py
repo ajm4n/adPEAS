@@ -168,7 +168,7 @@ def check_esc1_certificates(username, password, domain, dc_ip):
 
 # Example usage:
 username = input("Enter username: ")
-usernameWithDomain = ("Enter your username in this format: DOMAIN/username")
+usernameWithDomain = input("Enter your username in this format: DOMAIN/username")
 password = input("Enter password: ")
 domain = input("Enter domain: ")
 dc_ip = input("Enter domain controller IP or hostname: ")
