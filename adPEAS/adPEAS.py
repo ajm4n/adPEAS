@@ -173,5 +173,5 @@ password = input("Enter password: ")
 domain = input("Enter domain: ")
 dc_ip = input("Enter domain controller IP or hostname: ")
 
-kerberoast(usernameWithDomain, password, dc_ip)
+kerberoast(usernameWithDomain, username, password, dc_ip)
 check_esc1_certificates(username, password, domain, dc_ip)
