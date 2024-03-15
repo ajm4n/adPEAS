@@ -18,16 +18,15 @@ def kerberos_auth(username, password, domain, dc_ip):
         smb.kerberosLogin(user_principal, password, domain, ccache)
 
         # Check if the CCache contains credentials
-        if len(ccache) > 0:
-            return ccache, None
+        if ccache.getCredential(user_principal):
+            return True, ccache
         else:
             print("Kerberos authentication failed: No credentials found in CCache.")
-            return None, None
+            return False, None
 
     except Exception as e:
         print(f"Error during Kerberos authentication: {e}")
-        return None, None
-
+        return False, None
 
 def kerberoast(domain, username, password, dc_ip):
     try:
