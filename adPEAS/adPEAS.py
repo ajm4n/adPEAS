@@ -17,7 +17,12 @@ def kerberos_auth(username, password, domain, dc_ip):
         # Get a TGT for the user
         smb.kerberosLogin(user_principal, password, domain, ccache)
 
-        return ccache, None
+        # Check if the CCache contains credentials
+        if len(ccache) > 0:
+            return ccache, None
+        else:
+            print("Kerberos authentication failed: No credentials found in CCache.")
+            return None, None
 
     except Exception as e:
         print(f"Error during Kerberos authentication: {e}")
