@@ -6,7 +6,6 @@ from impacket.smbconnection import SMBConnection
 
 def kerberos_auth(username, password, domain, dc_ip):
     try:
-        logger.setLevel(1)
 
         # Request a TGT directly
         krb_cred = kerberos.KerberosCredential(username=username, password=password, domain=domain)
