@@ -6,12 +6,11 @@ from impacket.smbconnection import SMBConnection
 
 def kerberos_auth(username, password, domain, dc_ip):
     try:
-        # Connect to the Domain Controller via SMB
-        smb = SMBConnection(dc_ip, dc_ip)
-        smb.login(username, password, domain)
+        logger.setLevel(1)
 
-        # Get TGT from KDC
-        krbtgt, krbctx = smb.getKerberosTGT(username, password, domain)
+        # Request a TGT directly
+        krb_cred = kerberos.KerberosCredential(username=username, password=password, domain=domain)
+        krbtgt, krbctx = krb_cred.getKerberosTGT()
 
         return krbtgt, krbctx
 
