@@ -17,14 +17,12 @@ def kerberos_auth(username, password, domain, dc_ip):
         # Get a TGT for the user
         smb.kerberosLogin(user_principal, password, domain, ccache)
 
-        # Retrieve the TGT from the CCache
-        krbtgt = ccache.getCredential(user_principal)
-
-        return krbtgt, None
+        return ccache, None
 
     except Exception as e:
         print(f"Error during Kerberos authentication: {e}")
         return None, None
+
 
 def kerberoast(domain, username, password, dc_ip):
     try:
