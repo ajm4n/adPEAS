@@ -1,5 +1,5 @@
 from impacket.smbconnection import SMBConnection
-from impacket.krb5.kerberosv5 import getKerberosTGS
+from impacket.krb5.kerberosv5 import getKerberosTGS, getKerberosTGT
 from impacket.krb5.types import Principal
 from ldap3 import Server, Connection, ALL_ATTRIBUTES
 
