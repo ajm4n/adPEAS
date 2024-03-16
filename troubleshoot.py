@@ -3,8 +3,8 @@ from impacket.ldap import ldap, ldapasn1
 def find_kerberoastable_objects(username, password, domain, dc_ip):
     try:
         # Connect to the Domain Controller via LDAP
-        ldap_conn = ldap.LDAPConnection(dc_ip, username=f"{domain}\\{username}", password=password)
-        ldap_conn.connect()
+        ldap_conn = ldap.LDAPConnection(dc_ip)
+        ldap_conn.login(f"{domain}\\{username}", password)
 
         # Search for objects with SPNs set
         search_base = 'DC=' + ',DC='.join(domain.split('.'))
@@ -34,6 +34,7 @@ def find_kerberoastable_objects(username, password, domain, dc_ip):
     except Exception as e:
         print(f"Error while searching for kerberoastable objects: {e}")
         return []
+
 
 # Example usage:
 # Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
