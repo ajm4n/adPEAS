@@ -7,13 +7,13 @@ def find_kerberoastable_users(username, password, domain, dc_ip):
         conn = Connection(server, user=f"{domain}\\{username}", password=password)
         conn.bind()
 
-        # Search for users with Service Principal Names (SPNs) set
+        # Search for users with SPNs set
         conn.search(search_base='DC=' + ',DC='.join(domain.split('.')),
                      search_filter='(&(objectCategory=user)(servicePrincipalName=*))',
                      search_scope=SUBTREE,
-                     attributes=['sAMAccountName'])
+                     attributes=['sAMAccountName', 'servicePrincipalName'])
 
-        kerberoastable_users = [entry['sAMAccountName'].value for entry in conn.entries]
+        kerberoastable_users = [(entry['sAMAccountName'].value, entry['servicePrincipalName'].values) for entry in conn.entries]
 
         conn.unbind()
 
@@ -22,6 +22,7 @@ def find_kerberoastable_users(username, password, domain, dc_ip):
     except Exception as e:
         print(f"Error while searching for kerberoastable users: {e}")
         return []
+
 
 # Example usage:
 # Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
@@ -33,7 +34,7 @@ dc_ip = "10.10.0.86"
 kerberoastable_users = find_kerberoastable_users(username, password, domain, dc_ip)
 if kerberoastable_users:
     print("Kerberoastable users found:")
-    for user in kerberoastable_users:
-        print(user)
+    for user, spns in kerberoastable_users:
+        print(f"User: {user}, SPNs: {', '.join(spns)}")
 else:
     print("No kerberoastable users found.")
