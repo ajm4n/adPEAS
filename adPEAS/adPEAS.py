@@ -13,12 +13,11 @@ def certipy(username, password, domain, dc_ip):
      try:
           cmd = f"certipy-ad find {username}@{domain}:{password} -dc-ip {dc_ip}"
           subprocess.run(cmd, shell=True)
-     except:
-          print(f"Error while running Certipy")
+     except Exception as e:
+        print(f"Error while running Certipy: {e}")
 
 # Example usage:
 username = input("Enter username: ")
-# usernameWithDomain = input("Enter your username in this format: DOMAIN/username")
 password = input("Enter password: ")
 domain = input("Enter domain: ")
 dc_ip = input("Enter domain controller IP or hostname: ")
