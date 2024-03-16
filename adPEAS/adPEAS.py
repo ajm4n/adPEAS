@@ -19,14 +19,14 @@ def certipy(username, password, domain, dc_ip):
 def findDelegation(username, password, domain, dc_ip):
      try:
           cmd = f"findDelegation.py -dc-ip {dc_ip} {domain}/{username}:{password}"
-          subprocess.run(cmd, Shell=True)
+          subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error while finding delegation: {e}")
 
 def findUserDelegation(username, password, domain, dc_ip):
      try:
           cmd = f"findDelegation.py -user {username} -dc-ip {dc_ip} {domain}/{username}:{password}"
-          subprocess.run(cmd, Shell=True)
+          subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error while finding user delegation: {e}")
 
