@@ -4,7 +4,9 @@ def find_kerberoastable_objects(username, password, domain, dc_ip):
     try:
         # Connect to the Domain Controller via LDAP
         ldap_conn = ldap.LDAPConnection(dc_ip)
-        ldap_conn.login(f"{domain}\\{username}", password)
+
+        # Bind with credentials
+        ldap_conn.bind(username=f"{domain}\\{username}", password=password)
 
         # Search for objects with SPNs set
         search_base = 'DC=' + ',DC='.join(domain.split('.'))
@@ -28,7 +30,7 @@ def find_kerberoastable_objects(username, password, domain, dc_ip):
                 servicePrincipalNames = entry['attributes']['servicePrincipalName']
                 kerberoastable_objects.append((sAMAccountName, servicePrincipalNames))
 
-        ldap_conn.disconnect()
+        ldap_conn.unbind()
         return kerberoastable_objects
 
     except Exception as e:
