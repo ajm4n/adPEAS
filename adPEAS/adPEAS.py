@@ -12,6 +12,7 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
 def certipy(username, password, domain, dc_ip):
      try:
           cmd = f"certipy-ad find {username}@{domain}:{password} -dc-ip {dc_ip}"
+          subprocess.run(cmd, shell=True)
      except:
           print(f"Error while running Certipy")
 
