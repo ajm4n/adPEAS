@@ -3,7 +3,6 @@ from impacket.smbconnection import SMBConnection
 from ldap3 import Server, Connection, SUBTREE
 from impacket.krb5.ccache import CCache
 from impacket.krb5.crypto import Key
-from impacket.krb5.kerberosv5 import getKerberosTGT, sendReceive, sendReceiveSingle
 from impacket.krb5.types import Principal, KerberosTime
 from impacket.ntlm import compute_lmhash, compute_nthash
 from impacket.smbconnection import SMBConnection
