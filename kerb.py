@@ -2,11 +2,8 @@ from ldap3 import Server, Connection, SUBTREE, ALL_ATTRIBUTES
 
 def kerberoast(username, password, domain, dc_ip):
     try:
-        # Construct LDAP URL
-        ldap_url = f"ldap://{dc_ip}"
-
         # Connect to the domain controller via LDAP
-        server = Server(ldap_url, use_ssl=False)
+        server = Server(dc_ip, use_ssl=False)
         conn = Connection(server, user=f"{domain}\\{username}", password=password, authentication='NTLM')
         conn.bind()
 
