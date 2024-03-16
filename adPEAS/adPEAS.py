@@ -11,10 +11,10 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
 
 def certipy(username, password, domain, dc_ip):
      try:
-          cmd = f"certipy find {username}@{domain}:{password} -dc-ip {dc_ip}"
+          cmd = f"certipy-ad find {username}@{domain}:{password} -dc-ip {dc_ip}"
      except:
           print(f"Error while running Certipy")
-          
+
 # Example usage:
 username = input("Enter username: ")
 # usernameWithDomain = input("Enter your username in this format: DOMAIN/username")
