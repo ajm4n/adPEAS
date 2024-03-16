@@ -39,6 +39,7 @@ def kerberoast(username, password, domain, dc_ip):
         print(f"Error while Kerberoasting: {e}")
 
 
+
 # Example usage:
 # Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
 username = "ajman"
