@@ -7,7 +7,7 @@ from impacket.ntlm import compute_lmhash, compute_nthash
 from impacket.smbconnection import SMBConnection
 from impacket.krb5.asn1 import AP_REQ
 from impacket.krb5.crypto import Key
-from impacket.krb5 import getKerberosTGT
+from impacket.krb5.kerberosv5 import getKerberosTGT
 
 def kerberoast(username, password, domain, dc_ip):
     try:
