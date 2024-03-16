@@ -7,9 +7,9 @@ def find_kerberoastable_users(username, password, domain, dc_ip):
         conn = Connection(server, user=f"{domain}\\{username}", password=password)
         conn.bind()
 
-        # Search for kerberoastable users (users with SPNs set)
+        # Search for users with Service Principal Names (SPNs) set
         conn.search(search_base='DC=' + ',DC='.join(domain.split('.')),
-                     search_filter='(&(objectCategory=user)(objectClass=user)(servicePrincipalName=*))',
+                     search_filter='(&(objectCategory=user)(servicePrincipalName=*))',
                      search_scope=SUBTREE,
                      attributes=['sAMAccountName'])
 
