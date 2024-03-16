@@ -28,7 +28,7 @@ def kerberoast(username, password, domain, dc_ip):
                         principal_name = f"{spn}@{domain.upper()}"
                         
                         # Create a Principal object
-                        principal = Principal(principal_name)
+                        principal = Principal.from_string(principal_name)
                         
                         # Kerberoast the account
                         tgs_rep = getKerberosTGS(krbtgt_ticket, principal)
