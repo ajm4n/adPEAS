@@ -14,7 +14,10 @@ def kerberoast(username, password, domain, dc_ip):
         print(f"Successfully connected to LDAP server {dc_ip}")
 
         # Construct search base
-        search_base = f"DC={'DC=' if len(domain.split('.')) > 1 else ''}{','.join(domain.split('.'))}"
+        if len(domain.split('.')) > 1:
+            search_base = f"DC={','.join(domain.split('.'))}"
+        else:
+            search_base = f"DC={domain}"
         print(f"Search base: {search_base}")
 
         # Search for users with SPNs set
@@ -44,6 +47,7 @@ def kerberoast(username, password, domain, dc_ip):
 
     except Exception as e:
         print(f"Error while Kerberoasting: {e}")
+
 
 
 # Example usage:
