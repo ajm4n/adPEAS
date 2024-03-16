@@ -1,22 +1,34 @@
-from ldap3 import Server, Connection, SUBTREE, ALL_ATTRIBUTES
+from impacket.ldap import ldap, ldapasn1
 
 def find_kerberoastable_objects(username, password, domain, dc_ip):
     try:
         # Connect to the Domain Controller via LDAP
-        server = Server(dc_ip)
-        conn = Connection(server, user=f"{domain}\\{username}", password=password)
-        conn.bind()
+        ldap_conn = ldap.LDAPConnection(dc_ip, username=f"{domain}\\{username}", password=password)
+        ldap_conn.connect()
 
         # Search for objects with SPNs set
-        conn.search(search_base='DC=' + ',DC='.join(domain.split('.')),
-                     search_filter='(servicePrincipalName=*)',
-                     search_scope=SUBTREE,
-                     attributes=['sAMAccountName', 'servicePrincipalName'])
+        search_base = 'DC=' + ',DC='.join(domain.split('.'))
+        search_filter = '(servicePrincipalName=*)'
+        attributes = ['sAMAccountName', 'servicePrincipalName']
+        search_request = ldapasn1.SearchRequest(baseObject=ldapasn1.LDAPDN(search_base),
+                                                scope=ldapasn1.SearchRequest.SUB,
+                                                derefAliases=ldapasn1.SearchRequest.NEVER_DEREF_ALIASES,
+                                                sizeLimit=0,
+                                                timeLimit=0,
+                                                typesOnly=ldapasn1.LDAPBool(False),
+                                                filter=ldapasn1.LDAPFilter(filterstr=search_filter),
+                                                attributes=attributes)
+        search_result = ldap_conn.search(search_request)
 
-        kerberoastable_objects = [(entry['sAMAccountName'].value, entry['servicePrincipalName'].values) for entry in conn.entries]
+        # Parse search result
+        kerberoastable_objects = []
+        for entry in search_result:
+            if isinstance(entry, ldapasn1.SearchResultEntry):
+                sAMAccountName = entry['attributes']['sAMAccountName'][0]
+                servicePrincipalNames = entry['attributes']['servicePrincipalName']
+                kerberoastable_objects.append((sAMAccountName, servicePrincipalNames))
 
-        conn.unbind()
-
+        ldap_conn.disconnect()
         return kerberoastable_objects
 
     except Exception as e:
