@@ -29,3 +29,5 @@ print("Kerberoasting done!")
 print("Attempting to find all ADCS infrastructure...")
 certipy(username, password, domain, dc_ip)
 print("Done finding all ADCS infrastructure")
+
+#todo: auto open certipy output and grep for ESCs 
