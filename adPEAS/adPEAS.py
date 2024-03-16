@@ -23,13 +23,6 @@ def findDelegation(username, password, domain, dc_ip):
      except Exception as e:
           print(f"Error while finding delegation: {e}")
 
-def findUserDelegation(username, password, domain, dc_ip):
-     try:
-          cmd = f"findDelegation.py -user {username} -dc-ip {dc_ip} {domain}/{username}:{password}"
-          subprocess.run(cmd, shell=True)
-     except Exception as e:
-          print(f"Error while finding user delegation: {e}")
-
 # Example usage:
 username = input("Enter username: ")
 password = input("Enter password: ")
@@ -46,7 +39,4 @@ print("Done finding all ADCS infrastructure")
 print("Attempting to find all delegation...")
 findDelegation(username, password, domain, dc_ip)
 print("Done finding all delegation.")
-print("Attempting to find delegation for your user...")
-findUserDelegation(username, password, domain, dc_ip)
-print("Done finding user delegation.")
 #todo: auto open certipy output and grep for ESCs 
