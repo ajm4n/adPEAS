@@ -30,10 +30,11 @@ password = "DomainAdmin123!"
 domain = "snaplabs.local"
 dc_ip = "10.10.0.86"
 
-kerberoastable_users = find_kerberoastable_users(username, password, domain, dc_ip)
-if kerberoastable_users:
-    print("Kerberoastable users found:")
-    for user, spns in kerberoastable_users:
-        print(f"User: {user}, SPNs: {', '.join(spns)}")
+
+kerberoastable_objects = find_kerberoastable_objects(username, password, domain, dc_ip)
+if kerberoastable_objects:
+    print("Kerberoastable objects found:")
+    for obj, spns in kerberoastable_objects:
+        print(f"Object: {obj}, SPNs: {', '.join(spns)}")
 else:
-    print("No kerberoastable users found.")
+    print("No kerberoastable objects found.")
