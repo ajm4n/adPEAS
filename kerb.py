@@ -14,7 +14,8 @@ def kerberoast(username, password, domain, dc_ip):
         print(f"Successfully connected to LDAP server {dc_ip}")
 
         # Search for users with SPNs set
-        conn.search(search_base="DC=" + ",".join(domain.split(".")),
+        search_base = f"DC={'DC=' if len(domain.split('.')) > 1 else ''}{','.join(domain.split('.'))}"
+        conn.search(search_base=search_base,
                     search_filter="(servicePrincipalName=*)",
                     search_scope=SUBTREE,
                     attributes=ALL_ATTRIBUTES)
