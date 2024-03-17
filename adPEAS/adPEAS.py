@@ -11,7 +11,7 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
 
 def certipy(username, password, domain, dc_ip):
      try:
-          cmd = f"certipy-ad find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable"
+          cmd = f"certipy-ad find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable -stdout"
           subprocess.run(cmd, shell=True)
      except Exception as e:
         print(f"Error while running Certipy: {e}")
@@ -22,6 +22,12 @@ def findDelegation(username, password, domain, dc_ip):
           subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error while finding delegation: {e}")
+
+def bloodhound(username, password, domain, dc_ip):
+     try:
+          cmd = f"BloodHound.py -u {username} -p {password} -d {domain} -ns {dc_ip} -c All"
+     except Exception as e:
+          print(f"Error running BloodHound: {e}")
 
 # Example usage:
 username = input("Enter username: ")
