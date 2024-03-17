@@ -10,7 +10,7 @@ def init_venv():
 
 def install_tools():
      try:
-          cmd = f"pip install certipy bloodhound impacket"
+          cmd = f"pip install certipy-ad bloodhound impacket"
           subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error while installing tools: {e}")
@@ -25,7 +25,7 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
 
 def certipy(username, password, domain, dc_ip):
      try:
-          cmd = f"certipy find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable -stdout"
+          cmd = f"certipy-ad find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable -stdout"
           subprocess.run(cmd, shell=True)
      except Exception as e:
         print(f"Error while running Certipy: {e}")
