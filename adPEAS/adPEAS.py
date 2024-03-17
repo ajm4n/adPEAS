@@ -10,7 +10,7 @@ def init_venv():
 
 def install_tools():
      try:
-          cmd = f"pip install certipy, bloodhound, impacket"
+          cmd = f"pip install certipy bloodhound impacket"
           subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error while installing tools: {e}")
