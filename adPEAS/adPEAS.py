@@ -3,7 +3,7 @@ from ldap3 import Server, Connection, SUBTREE
 
 def init_venv():
      try:
-          cmd = f"python3 -m venv adPEAS && /bin/bash source adPEAS/bin/activate"
+          cmd = f"python3 -m venv adPEAS && . adPEAS/bin/activate"
           subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error while initializing venv: {e}")
