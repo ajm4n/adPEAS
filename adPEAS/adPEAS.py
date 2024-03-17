@@ -40,6 +40,7 @@ def findDelegation(username, password, domain, dc_ip):
 def bloodhound(username, password, domain, dc_ip):
      try:
           cmd = f"bloodhound-python -u {username} -p {password} -d {domain} -ns {dc_ip} -c All"
+          subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error running BloodHound: {e}")
 
