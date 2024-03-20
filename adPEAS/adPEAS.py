@@ -2,7 +2,7 @@ import argparse
 import getpass
 import subprocess
 from ldap3 import Server, Connection, SUBTREE
-from _version import __version__
+from adPEAS._version import __version__
 
 def find_and_kerberoast_objects(username, password, domain, dc_ip):
     try:
