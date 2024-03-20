@@ -1,13 +1,11 @@
-usage: python3 adPEAS.py 
+# Quick Start
+usage: adPEAS
 
-IF AUTOINSTALL DOES NOT WORK:
+# Installation
+`pipx install https://github.com/ajm4n/adPEAS`
 
-installation:
-1. python3 -m venv adPEAS
-2. source adPEAS/bin/activate
-3. pip3 install impacket
-4. pip3 install certipy-ad
-5. pip3 install bloodhound
+# Features
+adPEAS v1.0.0
+- Supports Certipy, BloodHound, findDelegation, and Kerberoasting.
 
-
-adPEAS v1.0 - supports Certipy, BloodHound, findDelegation, and Kerberoasting.  Will add more features as I get to work on them, lol.
+Will add more features as I get to work on them, lol.
