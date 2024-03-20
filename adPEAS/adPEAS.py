@@ -1,6 +1,7 @@
 import argparse
-import subprocess
 import getpass
+import pkg_resources
+import subprocess
 from ldap3 import Server, Connection, SUBTREE
 
 def find_and_kerberoast_objects(username, password, domain, dc_ip):
@@ -43,7 +44,11 @@ def main(arguments=None):
      else:
           args = parser.parse_args(arguments)
 
-     print("Welcome to adPEAS v1.0.0!")     
+     try:
+          version = pkg_resources.require("adPEAS")[0].version
+     except:
+          version = "Undefined"
+     print(f"Welcome to adPEAS v{version}!")     
 
      domain = args.domain
      dc_ip = args.dc_ip

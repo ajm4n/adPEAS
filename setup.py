@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='adPEAS',
-      version='1.0.0',
+      version='1.1.0',
       description='winPEAS, but for Active Directory',
       url='https://github.com/ajm4n/adPEAS',
       author='AJ Hammond',
