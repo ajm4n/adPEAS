@@ -1,8 +1,13 @@
 from setuptools import setup
-from adPEAS._version import __version__
+from distutils.util import convert_path
+
+main_ns = {}
+ver_path = convert_path('adPEAS/_version.py')
+with open(ver_path) as ver_file:
+    exec(ver_file.read(), main_ns)
 
 setup(name='adPEAS',
-      version=__version__,
+      version=main_ns["__version__"],
       description='winPEAS, but for Active Directory',
       url='https://github.com/ajm4n/adPEAS',
       author='AJ Hammond',
