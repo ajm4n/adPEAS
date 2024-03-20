@@ -45,7 +45,7 @@ def main(arguments=None):
      else:
           args = parser.parse_args(arguments)
 
-     print(f"Welcome to adPEAS{__version__}!")
+     print(f"Welcome to adPEAS v{__version__}!")
 
      domain = args.domain
      dc_ip = args.dc_ip
