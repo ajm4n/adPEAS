@@ -1,9 +1,10 @@
 # Quick Start
 ```bash
-usage: adPEAS [-h] -u USERNAME [-p PASSWORD] -d DOMAIN -i DC_IP
+usage: adPEAS [-h] [--version] -u USERNAME [-p PASSWORD] -d DOMAIN -i DC_IP
 
 options:
   -h, --help            show this help message and exit
+  --version             show program's version number and exit
   -u USERNAME, --username USERNAME
                         Username for log in.
   -p PASSWORD, --password PASSWORD
