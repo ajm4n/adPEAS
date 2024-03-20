@@ -35,6 +35,7 @@ def bloodhound(username, password, domain, dc_ip):
 
 def main(arguments=None):
      parser = argparse.ArgumentParser("adPEAS")
+     parser.add_argument('--version', action='version', version=f"v{pkg_resources.require('adPEAS')[0].version}")
      parser.add_argument("-u", "--username", required=True, help="Username for log in.")
      parser.add_argument("-p", "--password", help="Password for log in. Will prompt if not specified.")
      parser.add_argument("-d", "--domain", required=True, help="Domain of the DC.")
@@ -45,10 +46,10 @@ def main(arguments=None):
           args = parser.parse_args(arguments)
 
      try:
-          version = pkg_resources.require("adPEAS")[0].version
+          version = f" v{pkg_resources.require('adPEAS')[0].version}"
      except:
-          version = "Undefined"
-     print(f"Welcome to adPEAS v{version}!")     
+          version = ""
+     print(f"Welcome to adPEAS{version}!")
 
      domain = args.domain
      dc_ip = args.dc_ip
