@@ -50,7 +50,6 @@ def main(arguments=None):
      except:
           version = ""
      print(f"Welcome to adPEAS{version}!")
-     exit(0)
 
      domain = args.domain
      dc_ip = args.dc_ip
