@@ -22,6 +22,10 @@ pipx install --include-deps git+https://github.com/ajm4n/adPEAS
 ```
 
 # Features
+adPEAS v1.1.0
+- Pipx compatibility
+- Support flags instead of prompting for input
+
 adPEAS v1.0.0
 - Supports Certipy, BloodHound, findDelegation, and Kerberoasting.
 
