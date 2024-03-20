@@ -2,7 +2,11 @@
 usage: adPEAS
 
 # Installation
-`pipx install git+https://github.com/ajm4n/adPEAS`
+Install `adPEAS` and its dependencies
+
+```bash
+pipx install --include-deps git+https://github.com/ajm4n/adPEAS
+```
 
 # Features
 adPEAS v1.0.0
