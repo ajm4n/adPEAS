@@ -1,14 +1,6 @@
 import subprocess
 from ldap3 import Server, Connection, SUBTREE
 
-
-def install_tools():
-     try:
-          cmd = f"pip install certipy-ad bloodhound impacket"
-          subprocess.run(cmd, shell=True)
-     except Exception as e:
-          print(f"Error while installing tools: {e}")
-
 def find_and_kerberoast_objects(username, password, domain, dc_ip):
     try:
         # Connect to the Domain Controlle
@@ -46,9 +38,6 @@ def main():
      dc_ip = input("Enter domain controller IP or hostname: ")
 
      print("Welcome to adPEAS v1.0.0!")
-     print("Installing needed tools...")
-     install_tools()
-     print("Done installing tools.")
      print("Attempting to kerberoast the domain...")
      find_and_kerberoast_objects(username, password, domain, dc_ip)
      print("Kerberoasting done!")
