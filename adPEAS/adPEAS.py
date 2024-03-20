@@ -1,8 +1,8 @@
 import argparse
 import getpass
-import pkg_resources
 import subprocess
 from ldap3 import Server, Connection, SUBTREE
+from _version import __version__
 
 def find_and_kerberoast_objects(username, password, domain, dc_ip):
     try:
@@ -35,7 +35,7 @@ def bloodhound(username, password, domain, dc_ip):
 
 def main(arguments=None):
      parser = argparse.ArgumentParser("adPEAS")
-     parser.add_argument('--version', action='version', version=f"v{pkg_resources.require('adPEAS')[0].version}")
+     parser.add_argument('--version', action='version', version=f"v{__version__}")
      parser.add_argument("-u", "--username", required=True, help="Username for log in.")
      parser.add_argument("-p", "--password", help="Password for log in. Will prompt if not specified.")
      parser.add_argument("-d", "--domain", required=True, help="Domain of the DC.")
@@ -46,10 +46,11 @@ def main(arguments=None):
           args = parser.parse_args(arguments)
 
      try:
-          version = f" v{pkg_resources.require('adPEAS')[0].version}"
+          version = f" v{__version__}"
      except:
           version = ""
      print(f"Welcome to adPEAS{version}!")
+     exit(0)
 
      domain = args.domain
      dc_ip = args.dc_ip
