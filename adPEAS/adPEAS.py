@@ -19,7 +19,7 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
 def certipy(username, password, domain, dc_ip):
      try:
           cmd = f"certipy find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable -stdout"
-          subprocess.run(cmd, shell=True, captrue_output=True, text=True).stdout
+          output = subprocess.run(cmd, shell=True, captrue_output=True, text=True).stdout
           vuln_pattern = r'ESC([0-9]+)\s+:\s+(.+)'
           cert_pattern = r'Certificate Name\s+:\s+(.+)\n\s+Certificate Authorities\s+:\s+(.+)'
           vulnerabilities = re.findall(vuln_pattern, output)
