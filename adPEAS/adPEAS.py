@@ -61,3 +61,13 @@ def main(arguments=None):
      print("Attempting to kerberoast the domain...")
      find_and_kerberoast_objects(username, password, domain, dc_ip)
      print("Kerberoasting done!")
+     print("Collecting information for BloodHound...")
+     bloodhound(username, password, domain, dc_ip)
+     print("Dome collecting bloodhound information.")
+     print("Attempting to find all ADCS infrastructure...")
+     certipy(username, password, domain, dc_ip)
+     print("Done finding all ADCS infrastructure")
+     print("Attempting to find all delegation...")
+     findDelegation(username, password, domain, dc_ip)
+     print("Done finding all delegation.")
+     #todo: auto open certipy output and grep for ESCs 
