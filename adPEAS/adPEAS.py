@@ -2,6 +2,7 @@ import argparse
 import getpass
 import subprocess
 import sys
+import re
 
 if sys.version_info >= (3, 8):
     from importlib import metadata
@@ -19,7 +20,7 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
 def certipy(username, password, domain, dc_ip):
      try:
          # cmd = f"certipy find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable -stdout"
-          output = subprocess.run(["certipy find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable -stdout"], shell=True, captrue_output=True, check=True).stdout
+          output = subprocess.run(["certipy find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable -stdout"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
           vuln_pattern = r'ESC([0-9]+)\s+:\s+(.+)'
           cert_pattern = r'Certificate Name\s+:\s+(.+)\n\s+Certificate Authorities\s+:\s+(.+)'
           vulnerabilities = re.findall(vuln_pattern, output)
