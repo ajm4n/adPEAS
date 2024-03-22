@@ -1,8 +1,8 @@
 import argparse
 import getpass
 import subprocess
+from ldap3 import Server, Connection, SUBTREE
 import sys
-import re
 
 if sys.version_info >= (3, 8):
     from importlib import metadata
@@ -16,39 +16,27 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
             subprocess.run(cmd, shell=True)
     except Exception as e:
         print(f"Error while searching for kerberoastable objects or Kerberoasting: {e}")
-
 def certipy(username, password, domain, dc_ip):
      try:
-          cmd = ["certipy", "find", "-u", "{username}@{domain}", "-p", "{password}", "-dc-ip", "{dc_ip}", "-enabled", "-vulnerable", "-stdout"]
-          process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-          output, _ = process.communicate()
-          vuln_pattern = r'ESC([0-9]+)\s+:\s+(.+)'
-          cert_pattern = r'Certificate Name\s+:\s+(.+)\n\s+Certificate Authorities\s+:\s+(.+)'
-          vulnerabilities = re.findall(vuln_pattern, output)
-          cert_match = re.search(cert_pattern, output)
-          certificate_name = cert_match.group(1)
-          certificate_authority = cert_match.group(2)
-          for vuln in vulnerabilities:
-               esc_number = vuln[0]
-               esc_description = vuln[1]
-               print(f"{certificate_name} on {certificate_authority} is vulnerable to ESC{esc_number}: {esc_description}")
+          cmd = f"certipy find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable -stdout"
+          subprocess.run(cmd, shell=True)
      except Exception as e:
         print(f"Error while running Certipy: {e}")
-
 def findDelegation(username, password, domain, dc_ip):
      try:
           cmd = f"findDelegation.py -dc-ip {dc_ip} {domain}/{username}:{password}"
           subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error while finding delegation: {e}")
-
-def bloodhound(username, password, domain, dc_ip):
-     try:
-          cmd = f"bloodhound-python -u {username} -p {password} -d {domain} -ns {dc_ip} -c All"
-          subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error running BloodHound: {e}")
 
+def main():
+     # Example usage:
+     username = input("Enter username: ")
+     password = input("Enter password: ")
+     domain = input("Enter domain: ")
+     dc_ip = input("Enter domain controller IP or hostname: ")
 def main(arguments=None):
      adPEAS_version = metadata.version('adPEAS')
      parser = argparse.ArgumentParser("adPEAS")
@@ -69,16 +57,7 @@ def main(arguments=None):
      username = args.username
      password = args.password if args.password else getpass.getpass()
 
+     print("Welcome to adPEAS v1.0.0!")
      print("Attempting to kerberoast the domain...")
      find_and_kerberoast_objects(username, password, domain, dc_ip)
      print("Kerberoasting done!")
-     print("Collecting information for BloodHound...")
-     bloodhound(username, password, domain, dc_ip)
-     print("Dome collecting bloodhound information.")
-     print("Attempting to find all ADCS infrastructure...")
-     certipy(username, password, domain, dc_ip)
-     print("Done finding all ADCS infrastructure")
-     print("Attempting to find all delegation...")
-     findDelegation(username, password, domain, dc_ip)
-     print("Done finding all delegation.")
-     #todo: auto open certipy output and grep for ESCs 
