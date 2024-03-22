@@ -29,6 +29,10 @@ def findDelegation(username, password, domain, dc_ip):
           subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error while finding delegation: {e}")
+
+def bloodhound(username, password, domain, dc_ip):
+     try:
+          cmd = f"bloodhound-python -u {username} -p {password} -d {domain} -ns {dc_ip} -c All"
      except Exception as e:
           print(f"Error running BloodHound: {e}")
 
