@@ -19,7 +19,8 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
 def certipy(username, password, domain, dc_ip):
      try:
           cmd = f"certipy find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable -stdout"
-          subprocess.run(cmd, shell=True)
+          output = subprocess.check_output(cmd, shell=True, text=True)
+          parse_certipy_output(output)
      except Exception as e:
         print(f"Error while running Certipy: {e}")
 def findDelegation(username, password, domain, dc_ip):
@@ -30,6 +31,28 @@ def findDelegation(username, password, domain, dc_ip):
           print(f"Error while finding delegation: {e}")
      except Exception as e:
           print(f"Error running BloodHound: {e}")
+
+def parse_certipy_output(output):
+    sections = output.split("\n\n")
+    for section in sections:
+        if "Vulnerabilities" in section:
+            lines = section.split("\n")
+            template_info = {}
+            for line in lines:
+                if line.startswith("Template Name"):
+                    template_info["Template Name"] = line.split(": ")[1].strip()
+                elif line.startswith("Certificate Authorities"):
+                    template_info["Certificate Authorities"] = line.split(": ")[1].strip()
+                elif line.startswith("Enrollment Rights"):
+                    template_info["Enrollment Rights"] = line.split(": ")[1].strip()
+                elif line.startswith("[!] Vulnerabilities"):
+                    vulnerabilities = line.split(": ")[1].split(", ")
+                    for vulnerability in vulnerabilities:
+                        esc, description = vulnerability.split(" ", 1)
+                        print(f"Vulnerability: {esc}")
+                        print(f"Affected Template: {template_info['Template Name']}")
+                        print(f"Certificate Authority: {template_info['Certificate Authorities']}")
+                        print(f"Enrollment Rights: {template_info['Enrollment Rights']}\n")
 
 def main():
      # Example usage:
