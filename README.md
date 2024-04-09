@@ -23,6 +23,13 @@ pipx install --include-deps git+https://github.com/ajm4n/adPEAS
 ```
 
 # Features
+adPEAS v1.2.0
+- User enumeration
+- Password policy enumeration
+- LDAP signing enumeration
+- ZeroLogon scanner
+- noPAC scanner
+
 adPEAS v1.1.0
 - Pipx compatibility
 - Support flags instead of prompting for input
