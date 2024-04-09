@@ -41,7 +41,7 @@ def bloodhound(username, password, domain, dc_ip):
 
 def certi(username, password, domain, dc_ip):
      try:
-          cmd = f"certi.py list '{domain}/{username}' -p '{password}' --dc-ip {dc_ip} --vuln --enable"
+          cmd = f"certi.py list '{domain}/{username}':'{password}' --dc-ip {dc_ip} --vuln --enable"
           subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error running Certi.py: {e}")
