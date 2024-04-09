@@ -24,6 +24,7 @@ pipx install --include-deps git+https://github.com/ajm4n/adPEAS
 
 # Features
 adPEAS v1.2.0
+- Better ADCS enumeration output
 - User enumeration
 - Password policy enumeration
 - LDAP signing enumeration
