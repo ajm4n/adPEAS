@@ -12,7 +12,7 @@ setup(name='adPEAS',
       install_requires=[
           'certipy-ad==4.8.2',
           'bloodhound==1.7.2',
-          'impacket==0.11.0',
+          'impacket',
           'ldap3==2.9.1',
           'importlib-metadata >= 1.0 ; python_version < "3.8"',
           'regex==2023.12.25',
