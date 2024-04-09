@@ -16,7 +16,8 @@ setup(name='adPEAS',
           'ldap3==2.9.1',
           'importlib-metadata >= 1.0 ; python_version < "3.8"',
           'regex==2023.12.25',
-          'certi @ git+https://github.com/zer1t0/certi@main'
+          'certi @ git+https://github.com/zer1t0/certi@main',
+          'NetExec @ git+https://github.com/Pennyw0rth/NetExec@main'
       ],
       entry_points={
         'console_scripts': ['adPEAS=adPEAS.command_line:main']

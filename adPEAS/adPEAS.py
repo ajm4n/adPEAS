@@ -46,27 +46,40 @@ def certi(username, password, domain, dc_ip):
      except Exception as e:
           print(f"Error running Certi.py: {e}")
 
-def parse_certipy_output(output):
-    sections = output.split("\n\n")
-    for section in sections:
-        if "Vulnerabilities" in section:
-            lines = section.split("\n")
-            template_info = {}
-            for line in lines:
-                if line.startswith("Template Name"):
-                    template_info["Template Name"] = line.split(": ")[1].strip()
-                elif line.startswith("Certificate Authorities"):
-                    template_info["Certificate Authorities"] = line.split(": ")[1].strip()
-                elif line.startswith("Enrollment Rights"):
-                    template_info["Enrollment Rights"] = line.split(": ")[1].strip()
-                elif line.startswith("[!] Vulnerabilities"):
-                    vulnerabilities = line.split(": ")[1].split(", ")
-                    for vulnerability in vulnerabilities:
-                        esc, description = vulnerability.split(" ", 1)
-                        print(f"Vulnerability: {esc}")
-                        print(f"Affected Template: {template_info['Template Name']}")
-                        print(f"Certificate Authority: {template_info['Certificate Authorities']}")
-                        print(f"Enrollment Rights: {template_info['Enrollment Rights']}\n")
+def ldapSigning(username, password, domain, dc_ip):
+     try:
+          cmd = f"nxc ldap {dc_ip} -u '{username}' -p '{password}' -M ldap-checker"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while checking for LDAP Signing: {e}")
+
+def enumUsers(username, password, domain, dc_ip):
+     try:
+          cmd = f"nxc smb {dc_ip} -u '{username}' -p '{password}' --users"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while enumerating users: {e}")
+
+def enumPassPol(username, password, domain, dc_ip):
+     try:
+          cmd = f"nxc smb {dc_ip} -u '{username}' -p '{password}' --pass-pol"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while enumerating password policy: {e}")
+
+def zerologon(username, password, domain, dc_ip):
+     try:
+          cmd = f"nxc smb {dc_ip} -u '{username}' -p '{password}' -M zerologon"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while checking for ZeroLogon: {e}")
+
+def noPAC(username, password, domain, dc_ip):
+     try:
+          cmd = f"nxc smb {dc_ip} -u '{username}' -p '{password}' -M nopac"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while checking for noPAC: {e}")
 
 def main():
      # Example usage:
@@ -107,4 +120,21 @@ def main(arguments=None):
      print("Attempting to find all delegation...")
      findDelegation(username, password, domain, dc_ip)
      print("Done finding all delegation.")
+     print("Enumerating domain users...")
+     enumUsers(username, password, domain, dc_ip)
+     print("Done enumerating users.")
+     print("Enumerating password policy...")
+     enumPassPol(username, password, domain, dc_ip)
+     print("Done enumerating password policy.")
+     print("Checking LDAP signing requirements...")
+     ldapSigning(username, password, domain, dc_ip)
+     print("Done checking LDAP singing requirements.")
+     print("Checking for ZeroLogon...")
+     zerologon(username, password, domain, dc_ip)
+     print("Done checking for ZeroLogon.")
+     print("Checking for noPAC...")
+     noPAC(username, password, domain, dc_ip)
+     print("Done checking for noPAC.")
+
+     print("Thank you for using adPEAS!")
      #todo: auto open certipy output and grep for ESCs 
