@@ -15,7 +15,7 @@ setup(name='adPEAS',
           'impacket==0.11.0',
           'ldap3==2.9.1',
           'importlib-metadata >= 1.0 ; python_version < "3.8"',
-          'regex==2023.12.25'
+          'regex==2023.12.25',
           'certi.py @ git+https://github.com/zer1t0/certi@main'
       ],
       entry_points={
