@@ -37,6 +37,13 @@ def bloodhound(username, password, domain, dc_ip):
      except Exception as e:
           print(f"Error running BloodHound: {e}")
 
+def certi(username, password, domain, dc_ip):
+     try:
+          cmd = f"certi.py list '{domain}/{username}' -p '{password}' --dc-ip {dc_ip} --vuln --enable"
+          subprocess.run(cmd, Shell=True)
+     except Exception as e:
+          print(f"Error running Certi.py: {e}")
+
 def parse_certipy_output(output):
     sections = output.split("\n\n")
     for section in sections:
@@ -93,6 +100,7 @@ def main(arguments=None):
      print("Dome collecting bloodhound information.")
      print("Attempting to find all ADCS infrastructure...")
      certipy(username, password, domain, dc_ip)
+     certi(username, password, domain, dc_ip)
      print("Done finding all ADCS infrastructure")
      print("Attempting to find all delegation...")
      findDelegation(username, password, domain, dc_ip)
