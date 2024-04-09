@@ -16,13 +16,15 @@ def find_and_kerberoast_objects(username, password, domain, dc_ip):
             subprocess.run(cmd, shell=True)
     except Exception as e:
         print(f"Error while searching for kerberoastable objects or Kerberoasting: {e}")
+
 def certipy(username, password, domain, dc_ip):
      try:
-          cmd = f"certipy find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable -stdout"
-          subprocess.run(cmd, shell=True, text=True)
+          cmd = f"certipy find -u {username}@{domain} -p {password} -dc-ip {dc_ip} -enabled -vulnerable"
+          subprocess.run(cmd, shell=True)
          # parse_certipy_output(output)
      except Exception as e:
         print(f"Error while running Certipy: {e}")
+
 def findDelegation(username, password, domain, dc_ip):
      try:
           cmd = f"findDelegation.py -dc-ip {dc_ip} {domain}/{username}:{password}"
@@ -33,31 +35,51 @@ def findDelegation(username, password, domain, dc_ip):
 def bloodhound(username, password, domain, dc_ip):
      try:
           cmd = f"bloodhound-python -u {username} -p {password} -d {domain} -ns {dc_ip} -c All"
-          subprocess.run(cmd, Shell=True)
+          subprocess.run(cmd, shell=True)
      except Exception as e:
           print(f"Error running BloodHound: {e}")
 
-def parse_certipy_output(output):
-    sections = output.split("\n\n")
-    for section in sections:
-        if "Vulnerabilities" in section:
-            lines = section.split("\n")
-            template_info = {}
-            for line in lines:
-                if line.startswith("Template Name"):
-                    template_info["Template Name"] = line.split(": ")[1].strip()
-                elif line.startswith("Certificate Authorities"):
-                    template_info["Certificate Authorities"] = line.split(": ")[1].strip()
-                elif line.startswith("Enrollment Rights"):
-                    template_info["Enrollment Rights"] = line.split(": ")[1].strip()
-                elif line.startswith("[!] Vulnerabilities"):
-                    vulnerabilities = line.split(": ")[1].split(", ")
-                    for vulnerability in vulnerabilities:
-                        esc, description = vulnerability.split(" ", 1)
-                        print(f"Vulnerability: {esc}")
-                        print(f"Affected Template: {template_info['Template Name']}")
-                        print(f"Certificate Authority: {template_info['Certificate Authorities']}")
-                        print(f"Enrollment Rights: {template_info['Enrollment Rights']}\n")
+def certi(username, password, domain, dc_ip):
+     try:
+          cmd = f"certi.py list '{domain}/{username}':'{password}' --dc-ip {dc_ip} --vuln --enable"
+          subprocess.run(cmd, shell=True)
+     except Exception as e:
+          print(f"Error running Certi.py: {e}")
+
+def ldapSigning(username, password, domain, dc_ip):
+     try:
+          cmd = f"nxc ldap {dc_ip} -u '{username}' -p '{password}' -M ldap-checker"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while checking for LDAP Signing: {e}")
+
+def enumUsers(username, password, domain, dc_ip):
+     try:
+          cmd = f"nxc smb {dc_ip} -u '{username}' -p '{password}' --users"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while enumerating users: {e}")
+
+def enumPassPol(username, password, domain, dc_ip):
+     try:
+          cmd = f"nxc smb {dc_ip} -u '{username}' -p '{password}' --pass-pol"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while enumerating password policy: {e}")
+
+def zerologon(username, password, domain, dc_ip):
+     try:
+          cmd = f"nxc smb {dc_ip} -u '{username}' -p '{password}' -M zerologon"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while checking for ZeroLogon: {e}")
+
+def noPAC(username, password, domain, dc_ip):
+     try:
+          cmd = f"nxc smb {dc_ip} -u '{username}' -p '{password}' -M nopac"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while checking for noPAC: {e}")
 
 def main():
      # Example usage:
@@ -93,8 +115,26 @@ def main(arguments=None):
      print("Dome collecting bloodhound information.")
      print("Attempting to find all ADCS infrastructure...")
      certipy(username, password, domain, dc_ip)
+     certi(username, password, domain, dc_ip)
      print("Done finding all ADCS infrastructure")
      print("Attempting to find all delegation...")
      findDelegation(username, password, domain, dc_ip)
      print("Done finding all delegation.")
+     print("Enumerating domain users...")
+     enumUsers(username, password, domain, dc_ip)
+     print("Done enumerating users.")
+     print("Enumerating password policy...")
+     enumPassPol(username, password, domain, dc_ip)
+     print("Done enumerating password policy.")
+     print("Checking LDAP signing requirements...")
+     ldapSigning(username, password, domain, dc_ip)
+     print("Done checking LDAP singing requirements.")
+     print("Checking for ZeroLogon...")
+     zerologon(username, password, domain, dc_ip)
+     print("Done checking for ZeroLogon.")
+     print("Checking for noPAC...")
+     noPAC(username, password, domain, dc_ip)
+     print("Done checking for noPAC.")
+
+     print("Thank you for using adPEAS!")
      #todo: auto open certipy output and grep for ESCs 
