@@ -27,7 +27,7 @@ pipx install --include-deps git+https://github.com/ajm4n/adPEAS
 ```
 
 # Features
-adPEAS v1.4.0
+adPEAS v1.3.0
 - added scope parameter
 - added webdav scanner
 - added -nb and -nc for no bloodhound and no certipy
