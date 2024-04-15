@@ -82,6 +82,13 @@ def noPAC(username, password, domain, dc_ip):
      except exception as e:
           print(f"Error while checking for noPAC: {e}")
 
+def webDAV(username, password, domain, scope):
+     try:
+          cmd = f"nxc smb {scope} -u '{username}' -p '{password}' -M webdav"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while checking for webDAV: {e}")
+
 def main(arguments=None):
     adPEAS_version = metadata.version('adPEAS')
     parser = argparse.ArgumentParser("adPEAS")
@@ -92,6 +99,7 @@ def main(arguments=None):
     parser.add_argument("-i", "--dc-ip", required=True, help="Domain Controller IP or hostname.")
     parser.add_argument("-nb", "--no-bloodhound", action="store_true", help="Run adPEAS without Bloodhound")
     parser.add_argument("-nc", "--no-certipy", action="store_true", help="Run adPEAS without Certipy")
+    parser.add_argument("-s", "--scope", required=False, help="Newline delimited scope file.")
 
     if arguments is None:
         args = parser.parse_args()
@@ -104,6 +112,7 @@ def main(arguments=None):
     dc_ip = args.dc_ip
     username = args.username
     password = args.password if args.password else getpass.getpass()
+    scope = args.scope
 
     print("Attempting to kerberoast the domain...")
     find_and_kerberoast_objects(username, password, domain, dc_ip)
@@ -142,6 +151,10 @@ def main(arguments=None):
 
     print("Checking for noPAC...")
     noPAC(username, password, domain, dc_ip)
+    print("Done checking for noPAC.")
+
+    print("Checking for noPAC...")
+    webDAV(username, password, domain, scope)
     print("Done checking for noPAC.")
 
     print("Thank you for using adPEAS!")
