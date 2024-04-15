@@ -26,24 +26,13 @@ Install `adPEAS` and its dependencies
 pipx install --include-deps git+https://github.com/ajm4n/adPEAS
 ```
 
-# Features
-adPEAS v1.3.0
-- added scope parameter
-- added webdav scanner
-- added -nb and -nc for no bloodhound and no certipy
+# Example Usage
 
-adPEAS v1.2.0
-- Better ADCS enumeration output
-- User enumeration
-- Password policy enumeration
-- LDAP signing enumeration
-- ZeroLogon scanner
-- noPAC scanner
+`adPEAS -u ajman -p 'DomainAdmin123!' -d SNAPLABS -i 10.0.0.86`
 
-adPEAS v1.1.0
-- Pipx compatibility
-- Support flags instead of prompting for input
+![image](https://github.com/ajm4n/adPEAS/assets/60402150/cb8970ff-0308-4750-8cfe-e4d00b31b553)
 
-adPEAS v1.0.0
-- Supports Certipy, BloodHound, findDelegation, and Kerberoasting.
+![image](https://github.com/ajm4n/adPEAS/assets/60402150/60a324c4-2b85-4164-8b4f-2ea225a1c53c)
+
+![image](https://github.com/ajm4n/adPEAS/assets/60402150/4bd4b3c5-3b73-4041-96f7-3e909a8ceb44)
 
