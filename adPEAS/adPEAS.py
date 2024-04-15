@@ -153,7 +153,7 @@ def main(arguments=None):
     noPAC(username, password, domain, dc_ip)
     print("Done checking for noPAC.")
 
-    print("Checking for noPAC...")
+    print("Checking for webDAV...")
     webDAV(username, password, domain, scope)
     print("Done checking for noPAC.")
 
