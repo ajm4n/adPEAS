@@ -28,7 +28,7 @@ pipx install --include-deps git+https://github.com/ajm4n/adPEAS
 
 # Example Usage
 
-`adPEAS -u ajman -p 'DomainAdmin123!' -d SNAPLABS -i 10.0.0.86`
+```adPEAS -u ajman -p 'DomainAdmin123!' -d SNAPLABS -i 10.0.0.86```
 
 ![image](https://github.com/ajm4n/adPEAS/assets/60402150/cb8970ff-0308-4750-8cfe-e4d00b31b553)
 
