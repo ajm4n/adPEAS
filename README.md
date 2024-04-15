@@ -38,4 +38,3 @@ adPEAS v1.1.0
 adPEAS v1.0.0
 - Supports Certipy, BloodHound, findDelegation, and Kerberoasting.
 
-Will add more features as I get to work on them, lol.
