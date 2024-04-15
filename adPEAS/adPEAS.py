@@ -118,12 +118,12 @@ def main(arguments=None):
     find_and_kerberoast_objects(username, password, domain, dc_ip)
     print("Kerberoasting done!")
 
-    if not args.no-bloodhound:
+    if not args.nb:
         print("Collecting information for BloodHound...")
         bloodhound(username, password, domain, dc_ip)
         print("Done collecting Bloodhound information.")
 
-    if not args.no-certipy:
+    if not args.nc:
         print("Attempting to find all ADCS infrastructure...")
         certipy(username, password, domain, dc_ip)
         certi(username, password, domain, dc_ip)
