@@ -13,6 +13,10 @@ options:
                         Domain of the DC.
   -i DC_IP, --dc-ip DC_IP
                         Domain Controller IP or hostname.
+  -ns, --no-bloodhound
+                        Run adPEAS without running Bloodhound.
+  -nc, --no-certipy
+                        Run adPEAS without running Certipy. 
 ```
 
 # Installation
@@ -23,14 +27,10 @@ pipx install --include-deps git+https://github.com/ajm4n/adPEAS
 ```
 
 # Features
-
 adPEAS v1.4.0
-
--added scope parameter
-
--added webdav scanner
-
--added -nb and -nc for no bloodhound and no certipy
+- added scope parameter
+- added webdav scanner
+- added -nb and -nc for no bloodhound and no certipy
 
 adPEAS v1.2.0
 - Better ADCS enumeration output
