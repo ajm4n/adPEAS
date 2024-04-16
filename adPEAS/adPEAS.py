@@ -95,7 +95,14 @@ def smbSigningCheck(username, password, domain, scope):
           cmd = f"nxc smb {scope} -u '{username}' -p '{password}' --gen-relay-list relayme.txt"
           subprocess.run(cmd, shell=True)
      except exception as e:
-          print(f"Error while checking for webDAV: {e}")
+          print(f"Error while checking for SMB Signing: {e}")
+
+def smbShares(username, password, domain, scope):
+     try:
+          cmd = f"nxc smb {scope} -u '{username}' -p '{password}' --shares"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while checking for SMB Shares: {e}")
 
 def main(arguments=None):
     adPEAS_version = metadata.version('adPEAS')
@@ -190,6 +197,12 @@ def main(arguments=None):
     print("Checking SMB signing requirements and generating relayme.txt if SMB Signing is disabled on hosts (no output is normal if you did not supply a scope file)...")
     smbSigningCheck(username, password, domain, scope)
     print("Done checking for SMB Signing requirements.")
+
+    print("-------------------")
+
+    print("Checking SMB shares (no output is normal if you did not supply a scope file)...")
+    smbShares(username, password, domain, scope)
+    print("Done checking for SMB shares.")
 
     print("-------------------")
 
