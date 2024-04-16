@@ -13,6 +13,8 @@ options:
                         Domain of the DC.
   -i DC_IP, --dc-ip DC_IP
                         Domain Controller IP or hostname.
+  -s scope.txt, --scope scope.txt
+                        Supply a scope.txt file.
   -ns, --no-bloodhound
                         Run adPEAS without running Bloodhound.
   -nc, --no-certipy
