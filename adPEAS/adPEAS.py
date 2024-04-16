@@ -3,6 +3,7 @@ import getpass
 import subprocess
 from ldap3 import Server, Connection, SUBTREE
 import sys
+from termcolor import colored
 
 
 if sys.version_info >= (3, 8):
@@ -89,6 +90,13 @@ def webDAV(username, password, domain, scope):
      except exception as e:
           print(f"Error while checking for webDAV: {e}")
 
+def smbSigningCheck(username, password, domain, scope):
+     try:
+          cmd = f"nxc smb {scope} -u '{username}' -p '{password}' --gen-relay-list relayme.txt"
+          subprocess.run(cmd, shell=True)
+     except exception as e:
+          print(f"Error while checking for webDAV: {e}")
+
 def main(arguments=None):
     adPEAS_version = metadata.version('adPEAS')
     parser = argparse.ArgumentParser("adPEAS")
@@ -114,14 +122,20 @@ def main(arguments=None):
     password = args.password if args.password else getpass.getpass()
     scope = args.scope
 
+    print("-------------------")
+
     print("Attempting to kerberoast the domain...")
     find_and_kerberoast_objects(username, password, domain, dc_ip)
     print("Kerberoasting done!")
+
+    print("-------------------")
 
     if not args.no_bloodhound:
         print("Collecting information for BloodHound...")
         bloodhound(username, password, domain, dc_ip)
         print("Done collecting Bloodhound information.")
+ 
+    print("-------------------")
 
     if not args.no_certipy:
         print("Attempting to find all ADCS infrastructure...")
@@ -129,32 +143,54 @@ def main(arguments=None):
         certi(username, password, domain, dc_ip)
         print("Done finding all ADCS infrastructure.")
 
+    print("-------------------")
+    
     print("Attempting to find all delegation...")
     findDelegation(username, password, domain, dc_ip)
     print("Done finding all delegation.")
+
+    print("-------------------")
 
     print("Enumerating domain users...")
     enumUsers(username, password, domain, dc_ip)
     print("Done enumerating users.")
 
+    print("-------------------")
+
     print("Enumerating password policy...")
     enumPassPol(username, password, domain, dc_ip)
     print("Done enumerating password policy.")
+
+    print("-------------------")
 
     print("Checking LDAP signing requirements...")
     ldapSigning(username, password, domain, dc_ip)
     print("Done checking LDAP singing requirements.")
 
+    print("-------------------")
+    
     print("Checking for ZeroLogon...")
     zerologon(username, password, domain, dc_ip)
     print("Done checking for ZeroLogon.")
+
+    print("-------------------")
 
     print("Checking for noPAC...")
     noPAC(username, password, domain, dc_ip)
     print("Done checking for noPAC.")
 
-    print("Checking for webDAV...")
+    print("-------------------")
+
+    print("Checking for webDAV (no output is normal if you did not supply a scope file)...")
     webDAV(username, password, domain, scope)
-    print("Done checking for noPAC.")
+    print("Done checking for webDAV.")
+
+    print("-------------------")
+
+    print("Checking SMB signing requirements and generating relayme.txt if SMB Signing is disabled on hosts (no output is normal if you did not supply a scope file)...")
+    smbSigningCheck(username, password, domain, scope)
+    print("Done checking for SMB Signing requirements.")
+
+    print("-------------------")
 
     print("Thank you for using adPEAS!")
