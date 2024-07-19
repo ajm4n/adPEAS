@@ -115,12 +115,15 @@ def main(arguments=None):
     parser.add_argument("-nb", "--no-bloodhound", action="store_true", help="Run adPEAS without Bloodhound")
     parser.add_argument("-nc", "--no-certipy", action="store_true", help="Run adPEAS without Certipy")
     parser.add_argument("-s", "--scope", required=False, help="Newline delimited scope file.")
+    parser.add_argument("-sv", "--save", required=False, help="Save output to .txt files.")
 
     if arguments is None:
         args = parser.parse_args()
     else:
         args = parser.parse_args(arguments)
 
+
+    if not args.save:
     print(f"Welcome to adPEAS v{adPEAS_version}!")
 
     domain = args.domain
@@ -202,6 +205,88 @@ def main(arguments=None):
 
     print("Checking SMB shares (no output is normal if you did not supply a scope file)...")
     smbShares(username, password, domain, scope)
+    print("Done checking for SMB shares.")
+
+    print("-------------------")
+
+    print("Thank you for using adPEAS!")
+
+     #add saving option
+
+    if args.save:
+    print("-------------------")
+    print("Attempting to kerberoast the domain...")
+    f = open('kerberoast.txt', 'w')
+    print(find_and_kerberoast_objects(username, password, domain, dc_ip), file=kerberoast)
+    print("Kerberoasting done!")
+
+    print("-------------------")
+
+    if not args.no_bloodhound:
+        print("Collecting information for BloodHound...")
+        bloodhound(username, password, domain, dc_ip)
+        print("Done collecting Bloodhound information.")
+ 
+    print("-------------------")
+
+    if not args.no_certipy:
+        print("Attempting to find all ADCS infrastructure...")
+        certipy(username, password, domain, dc_ip)
+        print(certi(username, password, domain, dc_ip), file=certi)
+        print("Done finding all ADCS infrastructure.")
+
+    print("-------------------")
+    
+    print("Attempting to find all delegation...")
+    print(findDelegation(username, password, domain, dc_ip), file=findDelegation)
+    print("Done finding all delegation.")
+
+    print("-------------------")
+
+    print("Enumerating domain users...")
+    print(enumUsers(username, password, domain, dc_ip), file=enumUsers)
+    print("Done enumerating users.")
+
+    print("-------------------")
+
+    print("Enumerating password policy...")
+    print(enumPassPol(username, password, domain, dc_ip), file=enumPassPol)
+    print("Done enumerating password policy.")
+
+    print("-------------------")
+
+    print("Checking LDAP signing requirements...")
+    print(ldapSigning(username, password, domain, dc_ip), file=ldapSigning
+    print("Done checking LDAP singing requirements.")
+
+    print("-------------------")
+    
+    print("Checking for ZeroLogon...")
+    print(zerologon(username, password, domain, dc_ip), file=zeroLogon)
+    print("Done checking for ZeroLogon.")
+
+    print("-------------------")
+
+    print("Checking for noPAC...")
+    print(noPAC(username, password, domain, dc_ip), file=noPAC)
+    print("Done checking for noPAC.")
+
+    print("-------------------")
+
+    print("Checking for webDAV (no output is normal if you did not supply a scope file)...")
+    print(webDAV(username, password, domain, scope), file=webDAV)
+    print("Done checking for webDAV.")
+
+    print("-------------------")
+
+    print("Checking SMB signing requirements and generating relayme.txt if SMB Signing is disabled on hosts (no output is normal if you did not supply a scope file)...")
+    print(smbSigningCheck(username, password, domain, scope), file=smbSingingCheck)
+    print("Done checking for SMB Signing requirements.")
+
+    print("-------------------")
+
+    print("Checking SMB shares (no output is normal if you did not supply a scope file)...")
+    print(smbShares(username, password, domain, scope), file=smbShares)
     print("Done checking for SMB shares.")
 
     print("-------------------")
