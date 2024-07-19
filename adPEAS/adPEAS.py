@@ -124,171 +124,171 @@ def main(arguments=None):
 
 
     if not args.save:
-    print(f"Welcome to adPEAS v{adPEAS_version}!")
+          print(f"Welcome to adPEAS v{adPEAS_version}!")
 
-    domain = args.domain
-    dc_ip = args.dc_ip
-    username = args.username
-    password = args.password if args.password else getpass.getpass()
-    scope = args.scope
+          domain = args.domain
+          dc_ip = args.dc_ip
+          username = args.username
+          password = args.password if args.password else getpass.getpass()
+          scope = args.scope
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Attempting to kerberoast the domain...")
-    find_and_kerberoast_objects(username, password, domain, dc_ip)
-    print("Kerberoasting done!")
+          print("Attempting to kerberoast the domain...")
+          find_and_kerberoast_objects(username, password, domain, dc_ip)
+          print("Kerberoasting done!")
 
-    print("-------------------")
+          print("-------------------")
 
-    if not args.no_bloodhound:
-        print("Collecting information for BloodHound...")
-        bloodhound(username, password, domain, dc_ip)
-        print("Done collecting Bloodhound information.")
- 
-    print("-------------------")
+          if not args.no_bloodhound:
+               print("Collecting information for BloodHound...")
+               bloodhound(username, password, domain, dc_ip)
+               print("Done collecting Bloodhound information.")
+          
+          print("-------------------")
 
-    if not args.no_certipy:
-        print("Attempting to find all ADCS infrastructure...")
-        certipy(username, password, domain, dc_ip)
-        certi(username, password, domain, dc_ip)
-        print("Done finding all ADCS infrastructure.")
+          if not args.no_certipy:
+               print("Attempting to find all ADCS infrastructure...")
+               certipy(username, password, domain, dc_ip)
+               certi(username, password, domain, dc_ip)
+               print("Done finding all ADCS infrastructure.")
 
-    print("-------------------")
-    
-    print("Attempting to find all delegation...")
-    findDelegation(username, password, domain, dc_ip)
-    print("Done finding all delegation.")
+          print("-------------------")
+          
+          print("Attempting to find all delegation...")
+          findDelegation(username, password, domain, dc_ip)
+          print("Done finding all delegation.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Enumerating domain users...")
-    enumUsers(username, password, domain, dc_ip)
-    print("Done enumerating users.")
+          print("Enumerating domain users...")
+          enumUsers(username, password, domain, dc_ip)
+          print("Done enumerating users.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Enumerating password policy...")
-    enumPassPol(username, password, domain, dc_ip)
-    print("Done enumerating password policy.")
+          print("Enumerating password policy...")
+          enumPassPol(username, password, domain, dc_ip)
+          print("Done enumerating password policy.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Checking LDAP signing requirements...")
-    ldapSigning(username, password, domain, dc_ip)
-    print("Done checking LDAP singing requirements.")
+          print("Checking LDAP signing requirements...")
+          ldapSigning(username, password, domain, dc_ip)
+          print("Done checking LDAP singing requirements.")
 
-    print("-------------------")
-    
-    print("Checking for ZeroLogon...")
-    zerologon(username, password, domain, dc_ip)
-    print("Done checking for ZeroLogon.")
+          print("-------------------")
+          
+          print("Checking for ZeroLogon...")
+          zerologon(username, password, domain, dc_ip)
+          print("Done checking for ZeroLogon.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Checking for noPAC...")
-    noPAC(username, password, domain, dc_ip)
-    print("Done checking for noPAC.")
+          print("Checking for noPAC...")
+          noPAC(username, password, domain, dc_ip)
+          print("Done checking for noPAC.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Checking for webDAV (no output is normal if you did not supply a scope file)...")
-    webDAV(username, password, domain, scope)
-    print("Done checking for webDAV.")
+          print("Checking for webDAV (no output is normal if you did not supply a scope file)...")
+          webDAV(username, password, domain, scope)
+          print("Done checking for webDAV.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Checking SMB signing requirements and generating relayme.txt if SMB Signing is disabled on hosts (no output is normal if you did not supply a scope file)...")
-    smbSigningCheck(username, password, domain, scope)
-    print("Done checking for SMB Signing requirements.")
+          print("Checking SMB signing requirements and generating relayme.txt if SMB Signing is disabled on hosts (no output is normal if you did not supply a scope file)...")
+          smbSigningCheck(username, password, domain, scope)
+          print("Done checking for SMB Signing requirements.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Checking SMB shares (no output is normal if you did not supply a scope file)...")
-    smbShares(username, password, domain, scope)
-    print("Done checking for SMB shares.")
+          print("Checking SMB shares (no output is normal if you did not supply a scope file)...")
+          smbShares(username, password, domain, scope)
+          print("Done checking for SMB shares.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Thank you for using adPEAS!")
+          print("Thank you for using adPEAS!")
 
      #add saving option
 
-    if args.save:
-    print("-------------------")
-    print("Attempting to kerberoast the domain...")
-    f = open('kerberoast.txt', 'w')
-    print(find_and_kerberoast_objects(username, password, domain, dc_ip), file=kerberoast)
-    print("Kerberoasting done!")
+          if args.save:
+          print("-------------------")
+          print("Attempting to kerberoast the domain...")
+          f = open('kerberoast.txt', 'w')
+          print(find_and_kerberoast_objects(username, password, domain, dc_ip), file=kerberoast)
+          print("Kerberoasting done!")
 
-    print("-------------------")
+          print("-------------------")
 
-    if not args.no_bloodhound:
-        print("Collecting information for BloodHound...")
-        bloodhound(username, password, domain, dc_ip)
-        print("Done collecting Bloodhound information.")
- 
-    print("-------------------")
+          if not args.no_bloodhound:
+               print("Collecting information for BloodHound...")
+               bloodhound(username, password, domain, dc_ip)
+               print("Done collecting Bloodhound information.")
+          
+          print("-------------------")
 
-    if not args.no_certipy:
-        print("Attempting to find all ADCS infrastructure...")
-        certipy(username, password, domain, dc_ip)
-        print(certi(username, password, domain, dc_ip), file=certi)
-        print("Done finding all ADCS infrastructure.")
+          if not args.no_certipy:
+               print("Attempting to find all ADCS infrastructure...")
+               certipy(username, password, domain, dc_ip)
+               print(certi(username, password, domain, dc_ip), file=certi)
+               print("Done finding all ADCS infrastructure.")
 
-    print("-------------------")
-    
-    print("Attempting to find all delegation...")
-    print(findDelegation(username, password, domain, dc_ip), file=findDelegation)
-    print("Done finding all delegation.")
+          print("-------------------")
+          
+          print("Attempting to find all delegation...")
+          print(findDelegation(username, password, domain, dc_ip), file=findDelegation)
+          print("Done finding all delegation.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Enumerating domain users...")
-    print(enumUsers(username, password, domain, dc_ip), file=enumUsers)
-    print("Done enumerating users.")
+          print("Enumerating domain users...")
+          print(enumUsers(username, password, domain, dc_ip), file=enumUsers)
+          print("Done enumerating users.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Enumerating password policy...")
-    print(enumPassPol(username, password, domain, dc_ip), file=enumPassPol)
-    print("Done enumerating password policy.")
+          print("Enumerating password policy...")
+          print(enumPassPol(username, password, domain, dc_ip), file=enumPassPol)
+          print("Done enumerating password policy.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Checking LDAP signing requirements...")
-    print(ldapSigning(username, password, domain, dc_ip), file=ldapSigning
-    print("Done checking LDAP singing requirements.")
+          print("Checking LDAP signing requirements...")
+          print(ldapSigning(username, password, domain, dc_ip), file=ldapSigning
+          print("Done checking LDAP singing requirements.")
 
-    print("-------------------")
-    
-    print("Checking for ZeroLogon...")
-    print(zerologon(username, password, domain, dc_ip), file=zeroLogon)
-    print("Done checking for ZeroLogon.")
+          print("-------------------")
+          
+          print("Checking for ZeroLogon...")
+          print(zerologon(username, password, domain, dc_ip), file=zeroLogon)
+          print("Done checking for ZeroLogon.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Checking for noPAC...")
-    print(noPAC(username, password, domain, dc_ip), file=noPAC)
-    print("Done checking for noPAC.")
+          print("Checking for noPAC...")
+          print(noPAC(username, password, domain, dc_ip), file=noPAC)
+          print("Done checking for noPAC.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Checking for webDAV (no output is normal if you did not supply a scope file)...")
-    print(webDAV(username, password, domain, scope), file=webDAV)
-    print("Done checking for webDAV.")
+          print("Checking for webDAV (no output is normal if you did not supply a scope file)...")
+          print(webDAV(username, password, domain, scope), file=webDAV)
+          print("Done checking for webDAV.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Checking SMB signing requirements and generating relayme.txt if SMB Signing is disabled on hosts (no output is normal if you did not supply a scope file)...")
-    print(smbSigningCheck(username, password, domain, scope), file=smbSingingCheck)
-    print("Done checking for SMB Signing requirements.")
+          print("Checking SMB signing requirements and generating relayme.txt if SMB Signing is disabled on hosts (no output is normal if you did not supply a scope file)...")
+          print(smbSigningCheck(username, password, domain, scope), file=smbSingingCheck)
+          print("Done checking for SMB Signing requirements.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Checking SMB shares (no output is normal if you did not supply a scope file)...")
-    print(smbShares(username, password, domain, scope), file=smbShares)
-    print("Done checking for SMB shares.")
+          print("Checking SMB shares (no output is normal if you did not supply a scope file)...")
+          print(smbShares(username, password, domain, scope), file=smbShares)
+          print("Done checking for SMB shares.")
 
-    print("-------------------")
+          print("-------------------")
 
-    print("Thank you for using adPEAS!")
+          print("Thank you for using adPEAS!")
