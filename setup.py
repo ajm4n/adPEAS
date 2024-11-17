@@ -17,7 +17,8 @@ setup(name='adPEAS',
           'importlib-metadata >= 1.0 ; python_version < "3.8"',
           'regex==2023.12.25',
           'certi @ git+https://github.com/zer1t0/certi@main',
-          'NetExec @ git+https://github.com/Pennyw0rth/NetExec@main'
+          'NetExec @ git+https://github.com/Pennyw0rth/NetExec@main',
+          'termcolor==2.5.0'
       ],
       entry_points={
         'console_scripts': ['adPEAS=adPEAS.command_line:main']
