@@ -18,7 +18,7 @@ setup(name='adPEAS',
           'regex==2023.12.25',
           'certi @ git+https://github.com/zer1t0/certi@main',
           'NetExec @ git+https://github.com/Pennyw0rth/NetExec@main',
-          'termcolor==2.5.0'
+          'termcolor==2.5.0',
           'beautifulsoup4'
       ],
       entry_points={
